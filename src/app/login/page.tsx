@@ -151,8 +151,8 @@ export default function LoginPage() {
             backgroundImage: `url('/login_bg.webp')`
           }}
         />
-        {/* Fade Suave na Borda Esquerda para integrar a imagem ao fundo azul do container */}
-        <div className="absolute inset-y-0 left-0 w-36 bg-gradient-to-r from-[#021730] via-[#021730]/70 to-transparent pointer-events-none z-20" />
+        {/* Degradê de Transição entre a parte branca/cinza claro da esquerda (#EEF2F6) e o azul escuro (#021730) */}
+        <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-[#EEF2F6] to-[#021730] pointer-events-none z-20" />
       </div>
     </div>
   );
