@@ -146,13 +146,11 @@ export default function LoginPage() {
       {/* Coluna da Direita: Imagem de fundo com frase de Vicente Falconi */}
       <div className="hidden md:block md:w-[58%] lg:w-[64%] relative z-10 bg-[#021730] overflow-hidden">
         <div 
-          className="absolute inset-0 bg-contain bg-center bg-no-repeat"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ 
             backgroundImage: `url('/login_bg.webp')`
           }}
         />
-        {/* Degradê Curto, Forte e Concentrado na Junção (from-[#EEF2F6] to-transparent) */}
-        <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-[#EEF2F6] via-[#EEF2F6]/70 to-transparent pointer-events-none z-20" />
       </div>
     </div>
   );
