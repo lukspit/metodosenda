@@ -13,7 +13,8 @@ import {
   Users,
   Video,
   MapPin,
-  CheckCircle
+  CheckCircle,
+  X
 } from 'lucide-react';
 import { 
   format, 
@@ -120,9 +121,25 @@ export default function CalendarPage() {
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Cabeçalho */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Agenda</h1>
-        <p className="text-sm text-slate-500 mt-1">Calendário integrado de reuniões, consultorias e alinhamentos.</p>
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Agenda</h1>
+          <p className="text-sm text-slate-500 mt-1">Calendário integrado de reuniões, consultorias e alinhamentos.</p>
+        </div>
+        <button
+          onClick={() => {
+            setNewTitle('');
+            setNewStart('');
+            setNewEnd('');
+            setNewDesc('');
+            setNewDept('');
+            setShowAddForm(true);
+          }}
+          className="flex items-center gap-2 bg-[#1E2538] hover:bg-[#2c3752] text-white text-xs font-semibold px-4 py-2.5 rounded-md shadow transition-all active:scale-95 border border-slate-700"
+        >
+          <Plus className="w-4 h-4 text-[#C5A85A]" />
+          Nova Reunião
+        </button>
       </div>
 
       {/* Input de IA Contextual */}
@@ -274,94 +291,117 @@ export default function CalendarPage() {
               <p className="text-xs text-slate-400 italic py-4">Nenhuma reunião agendada para este dia.</p>
             )}
           </div>
-
-          {/* Formulário de Agendamento Manual */}
-          {showAddForm && (
-            <div className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm animate-fadeIn">
-              <h3 className="font-bold text-slate-800 text-sm mb-4">Novo Agendamento</h3>
-              <form onSubmit={handleManualSubmit} className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Título</label>
-                  <input
-                    type="text"
-                    required
-                    value={newTitle}
-                    onChange={e => setNewTitle(e.target.value)}
-                    placeholder="Ex: Conselho Trimestral"
-                    className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Início</label>
-                    <input
-                      type="time"
-                      required
-                      value={newStart}
-                      onChange={e => setNewStart(e.target.value)}
-                      className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Término</label>
-                    <input
-                      type="time"
-                      required
-                      value={newEnd}
-                      onChange={e => setNewEnd(e.target.value)}
-                      className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Setor</label>
-                  <select
-                    value={newDept}
-                    onChange={e => setNewDept(e.target.value)}
-                    className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
-                  >
-                    <option value="">Geral</option>
-                    {departments.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Descrição</label>
-                  <textarea
-                    value={newDesc}
-                    onChange={e => setNewDesc(e.target.value)}
-                    rows={2}
-                    placeholder="Pauta da reunião..."
-                    className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A] resize-none"
-                  />
-                </div>
-
-                <div className="flex gap-2 justify-end text-xs">
-                  <button 
-                    type="button" 
-                    onClick={() => setShowAddForm(false)} 
-                    className="px-3 py-1.5 hover:bg-slate-100 rounded-lg text-slate-500 font-medium transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="px-4 py-1.5 bg-[#C5A85A] hover:bg-[#B3964C] text-white rounded-lg font-bold shadow transition-colors"
-                  >
-                    Agendar
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
         </div>
-
       </div>
+
+      {/* Modal Premium de Agendamento Manual */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
+            
+            {/* Header do Modal */}
+            <div className="flex items-center justify-between px-6 py-4 bg-[#1E2538] text-white rounded-t-lg">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-[#C5A85A]" />
+                <h3 className="font-bold text-sm uppercase tracking-wider">Novo Agendamento</h3>
+              </div>
+              <button 
+                onClick={() => setShowAddForm(false)}
+                className="text-slate-400 hover:text-white transition-colors animate-pulse-slow"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Formulário */}
+            <form onSubmit={handleManualSubmit} className="p-6 space-y-4 text-left">
+              <div>
+                <p className="text-xs text-slate-500 font-medium bg-slate-50 p-2.5 rounded border border-slate-100 flex items-center gap-1.5 capitalize">
+                  <Clock className="w-4 h-4 text-[#C5A85A]" />
+                  Data Selecionada: <strong>{format(selectedDate, 'eeee, d MMMM yyyy', { locale: ptBR })}</strong>
+                </p>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">Título *</label>
+                <input
+                  type="text"
+                  required
+                  value={newTitle}
+                  onChange={e => setNewTitle(e.target.value)}
+                  placeholder="Ex: Conselho Trimestral"
+                  className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">Início *</label>
+                  <input
+                    type="time"
+                    required
+                    value={newStart}
+                    onChange={e => setNewStart(e.target.value)}
+                    className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">Término *</label>
+                  <input
+                    type="time"
+                    required
+                    value={newEnd}
+                    onChange={e => setNewEnd(e.target.value)}
+                    className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">Setor Vinculado</label>
+                <select
+                  value={newDept}
+                  onChange={e => setNewDept(e.target.value)}
+                  className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A]"
+                >
+                  <option value="">Geral (Sem setor específico)</option>
+                  {departments.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">Descrição / Pauta</label>
+                <textarea
+                  value={newDesc}
+                  onChange={e => setNewDesc(e.target.value)}
+                  rows={3}
+                  placeholder="Pauta da reunião, objetivos..."
+                  className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A] resize-none"
+                />
+              </div>
+
+              {/* Botões do Rodapé */}
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors text-xs font-semibold text-slate-500"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-[#1E2538] hover:bg-[#2c3752] text-white font-semibold py-2 px-5 rounded-md shadow transition-colors text-xs"
+                >
+                  Agendar Reunião
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

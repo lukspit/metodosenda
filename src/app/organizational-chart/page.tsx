@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useApp, Department } from '../../context/AppContext';
 import { SmartInput } from '../../components/SmartInput';
 import { 
@@ -120,7 +120,6 @@ export default function OrganizationalChart() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-
   // Estados dos Modais
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDept, setSelectedDept] = useState<Department | null>(null);
@@ -130,6 +129,32 @@ export default function OrganizationalChart() {
   const [deptName, setDeptName] = useState('');
   const [deptManagerId, setDeptManagerId] = useState('');
   const [deptParentId, setDeptParentId] = useState('');
+
+  const connectingNodeId = useRef<string | null>(null);
+
+  const onConnectStart = useCallback((_: any, { nodeId }: any) => {
+    connectingNodeId.current = nodeId;
+  }, []);
+
+  const onConnectEnd = useCallback(
+    (event: any) => {
+      if (!connectingNodeId.current) return;
+
+      const targetIsPane = event.target.closest('.react-flow__pane');
+
+      if (targetIsPane) {
+        // Define o pai como o nó de onde a conexão foi puxada
+        setDeptParentId(connectingNodeId.current);
+        setDeptName('');
+        setDeptManagerId('');
+        setSelectedDept(null);
+        setIsModalOpen(true);
+      }
+
+      connectingNodeId.current = null;
+    },
+    [setDeptParentId, setDeptName, setDeptManagerId, setSelectedDept, setIsModalOpen]
+  );
 
   // Mapeamento dos tipos personalizados de nós no React Flow
   const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
@@ -371,6 +396,8 @@ export default function OrganizationalChart() {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onConnectStart={onConnectStart}
+            onConnectEnd={onConnectEnd}
             nodeTypes={nodeTypes}
             fitView
             minZoom={0.3}
