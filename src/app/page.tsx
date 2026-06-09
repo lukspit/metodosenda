@@ -54,7 +54,7 @@ const parseMarkdownToHtml = (markdown: string): string => {
         inList = false;
       }
       const titleText = processedLine.replace(/^## /, '');
-      htmlLines.push(`<h2 class="text-sm font-extrabold text-[#C5A85A] mt-5 mb-2 border-b border-slate-200 pb-1 uppercase tracking-wider">${titleText}</h2>`);
+      htmlLines.push(`<h2 class="text-sm font-extrabold text-slate-800 mt-5 mb-2 border-b border-slate-200 pb-1 uppercase tracking-wider">${titleText}</h2>`);
       return;
     }
     
@@ -65,7 +65,7 @@ const parseMarkdownToHtml = (markdown: string): string => {
         inList = false;
       }
       const titleText = processedLine.replace(/^### /, '');
-      htmlLines.push(`<h3 class="text-xs font-bold text-[#C5A85A] mt-3 mb-1.5">${titleText}</h3>`);
+      htmlLines.push(`<h3 class="text-xs font-bold text-slate-800 mt-3 mb-1.5">${titleText}</h3>`);
       return;
     }
     
@@ -79,7 +79,7 @@ const parseMarkdownToHtml = (markdown: string): string => {
       let itemText = listMatch[1];
       // Processar negrito e itálico dentro do item
       itemText = itemText
-        .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-[#C5A85A] font-bold">$1</strong>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-slate-900 font-bold">$1</strong>')
         .replace(/\*([^*]+)\*/g, '<em class="text-slate-500 italic font-medium">$1</em>');
       
       htmlLines.push(`<li class="text-xs text-slate-700 leading-relaxed">${itemText}</li>`);
@@ -94,7 +94,7 @@ const parseMarkdownToHtml = (markdown: string): string => {
     
     // Parágrafo comum - processar negrito e itálico
     processedLine = processedLine
-      .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-[#C5A85A] font-bold">$1</strong>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-slate-900 font-bold">$1</strong>')
       .replace(/\*([^*]+)\*/g, '<em class="text-slate-500 italic font-medium">$1</em>');
     
     htmlLines.push(`<p class="text-xs text-slate-700 leading-relaxed mb-2">${processedLine}</p>`);
@@ -196,14 +196,14 @@ export default function Dashboard() {
   // Diagnóstico pré-gerado caso o usuário ainda não tenha solicitado via IA
   const getStaticDiagnostic = () => {
     return `
-      <h3 class="text-sm font-bold text-[#C5A85A] mb-2">⚡ DIAGNÓSTICO PREVENTIVO (SENDA AI)</h3>
+      <h3 class="text-sm font-bold text-slate-800 mb-2">⚡ DIAGNÓSTICO PREVENTIVO (SENDA AI)</h3>
       <p class="text-xs text-slate-700 mb-3 leading-relaxed">
         Com base nos dados atuais da <strong>${currentTenant?.name || 'sua empresa'}</strong>, identificamos pontos críticos de atenção:
       </p>
       <ul class="space-y-2 text-xs text-slate-700 list-disc list-inside">
-        <li>O setor <strong class="text-[#C5A85A]">Financeiro</strong> está com o plano de ação de <em class="text-slate-500 italic font-medium">Fechamento Contábil</em> atrasado, o que pode impactar a meta de faturamento trimestral.</li>
-        <li>O indicador de <strong class="text-[#C5A85A]">NPS</strong> comercial obteve melhora e está em <strong class="text-[#C5A85A]">86%</strong>, superando a meta atual de 85%. Bom trabalho!</li>
-        <li>Há <strong class="text-[#C5A85A]">1 plano de ação atrasado</strong> que necessita de intervenção direta da diretoria.</li>
+        <li>O setor <strong class="font-bold text-slate-900">Financeiro</strong> está com o plano de ação de <em class="text-slate-500 italic font-medium">Fechamento Contábil</em> atrasado, o que pode impactar a meta de faturamento trimestral.</li>
+        <li>O indicador de <strong class="font-bold text-slate-900">NPS</strong> comercial obteve melhora e está em <strong class="font-bold text-slate-900">86%</strong>, superando a meta atual de 85%. Bom trabalho!</li>
+        <li>Há <strong class="font-bold text-slate-900">1 plano de ação atrasado</strong> que necessita de intervenção direta da diretoria.</li>
       </ul>
       <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-400">
         <span>Última análise: agora mesmo</span>
@@ -348,8 +348,8 @@ export default function Dashboard() {
         <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-slate-200/60 relative overflow-hidden group">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-xs text-[#C5A85A] font-bold tracking-wider uppercase">
-                <Sparkles className="w-4 h-4 animate-pulse" /> Senda AI Insights
+              <span className="flex items-center gap-1.5 text-xs text-slate-800 font-bold tracking-wider uppercase">
+                <Sparkles className="w-4 h-4 animate-pulse text-slate-400" /> Senda AI Insights
               </span>
               <button 
                 onClick={generateRealInsights}
@@ -379,7 +379,7 @@ export default function Dashboard() {
 
           <div className="mt-6 pt-4 border-t border-slate-150 flex items-center justify-between text-[10px] text-slate-400">
             <span>Os insights são baseados no método estratégico da Senda Consultoria.</span>
-            <span className="font-semibold text-[#C5A85A]">Use o botão no topo para atualizar</span>
+            <span className="font-semibold text-slate-400">Use o botão no topo para atualizar</span>
           </div>
         </div>
 
