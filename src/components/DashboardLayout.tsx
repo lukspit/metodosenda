@@ -59,14 +59,13 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
         <div>
           {/* Logo Senda */}
           <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800 bg-[#161B29]">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#C5A85A] to-[#E5C87A] flex items-center justify-center shadow-md">
-              <Compass className="w-5 h-5 text-[#1E2538] stroke-[2.5]" />
-            </div>
+            <img src="/logo.png" className="w-8 h-8 object-contain" alt="Logo Senda" />
             <div>
               <span className="font-extrabold text-white text-lg tracking-wider">MÉTODO</span>
               <span className="text-[#C5A85A] text-xs font-semibold block -mt-1.5 tracking-widest uppercase">Senda</span>
             </div>
           </div>
+
 
           {/* Menu Principal */}
           <nav className="mt-6 px-4 space-y-1">
