@@ -38,24 +38,23 @@ export function SkeletonDashboard() {
       {/* Seções Horizontais: Senda AI Insights + Gráfico de Indicadores */}
       <div className="flex flex-col gap-6">
         {/* Card de IA Skeleton - Largura Inteira */}
-        <div className="bg-gradient-to-br from-[#1E2538] to-[#111622] rounded-lg p-6 shadow-lg border border-slate-800 flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute -right-20 -top-20 w-48 h-48 bg-[#C5A85A] rounded-full blur-[80px] opacity-10 pointer-events-none" />
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200/60 flex flex-col justify-between relative overflow-hidden">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="skeleton-pulse-dark h-4 w-32 rounded" />
-              <div className="skeleton-pulse-dark h-7 w-7 rounded-lg" />
+              <div className="skeleton-pulse h-4 w-32 rounded" />
+              <div className="skeleton-pulse h-7 w-7 rounded-lg" />
             </div>
             <div className="space-y-3 py-4">
-              <div className="skeleton-pulse-dark h-4 w-3/4 rounded" />
-              <div className="skeleton-pulse-dark h-3 w-full rounded" />
-              <div className="skeleton-pulse-dark h-3 w-5/6 rounded" />
-              <div className="skeleton-pulse-dark h-3 w-2/3 rounded" />
-              <div className="skeleton-pulse-dark h-3 w-4/5 rounded" />
-              <div className="skeleton-pulse-dark h-3 w-1/2 rounded" />
+              <div className="skeleton-pulse h-4 w-3/4 rounded" />
+              <div className="skeleton-pulse h-3 w-full rounded" />
+              <div className="skeleton-pulse h-3 w-5/6 rounded" />
+              <div className="skeleton-pulse h-3 w-2/3 rounded" />
+              <div className="skeleton-pulse h-3 w-4/5 rounded" />
+              <div className="skeleton-pulse h-3 w-1/2 rounded" />
             </div>
           </div>
-          <div className="mt-6 pt-4 border-t border-slate-800">
-            <div className="skeleton-pulse-dark h-3 w-48 rounded" />
+          <div className="mt-6 pt-4 border-t border-slate-150">
+            <div className="skeleton-pulse h-3 w-48 rounded" />
           </div>
         </div>
 
