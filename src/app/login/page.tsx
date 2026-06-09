@@ -42,8 +42,17 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EEF2F6] flex flex-col md:flex-row font-sans overflow-hidden">
+    <div className="min-h-screen bg-[#EEF2F6] flex flex-col md:flex-row font-sans overflow-hidden relative">
       
+      {/* Elemento decorativo de fundo: curvas douradas Senda */}
+      <div className="absolute inset-y-0 left-0 right-0 pointer-events-none z-0 overflow-hidden hidden md:block">
+        <svg className="absolute -bottom-10 -left-20 w-[120%] h-[80%] text-[#C5A85A] opacity-[0.06]" viewBox="0 0 1440 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M-100,700 C300,600 700,720 1100,450 C1300,315 1500,400 1700,320" stroke="currentColor" strokeWidth="2.5" />
+          <path d="M-100,730 C350,620 750,690 1150,420 C1320,295 1480,370 1700,290" stroke="currentColor" strokeWidth="1.5" strokeDasharray="6 6" />
+          <path d="M-100,670 C250,570 650,750 1050,480 C1250,335 1450,430 1700,350" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      </div>
+
       {/* Coluna da Esquerda: Área de Login */}
       <div className="w-full md:w-[42%] lg:w-[36%] flex items-center justify-center p-6 md:p-12 z-20 relative bg-[#EEF2F6]">
         
@@ -144,13 +153,18 @@ export default function LoginPage() {
       </div>
 
       {/* Coluna da Direita: Imagem de fundo com frase de Vicente Falconi */}
-      <div className="hidden md:block md:w-[58%] lg:w-[64%] relative z-10 bg-[#EEF2F6] overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-contain bg-right bg-no-repeat"
-          style={{ 
-            backgroundImage: `url('/login_bg.webp')`
-          }}
-        />
+      <div className="hidden md:block md:w-[58%] lg:w-[64%] relative z-10 overflow-hidden">
+        <div className="relative h-full w-full flex justify-end">
+          <div className="relative h-full">
+            <img 
+              src="/login_bg.webp" 
+              className="h-full w-auto object-contain select-none z-10 relative" 
+              alt="Consultoria Estratégica"
+            />
+            {/* Fade na borda esquerda da imagem */}
+            <div className="absolute inset-y-0 -left-1 w-32 bg-gradient-to-r from-[#EEF2F6] to-transparent pointer-events-none z-20" />
+          </div>
+        </div>
       </div>
     </div>
   );
