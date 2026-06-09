@@ -29,6 +29,11 @@ export default function Dashboard() {
   const { currentTenant, indicators, actionPlans, loading, saveDashboardInsights } = useApp();
   const [aiInsight, setAiInsight] = useState<string>('');
   const [loadingInsight, setLoadingInsight] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Fallbacks de segurança para arrays e objetos
   const safeIndicators = useMemo(() => indicators || [], [indicators]);
@@ -306,7 +311,7 @@ export default function Dashboard() {
           </div>
 
           <div className="h-[320px] w-full pt-4">
-            {safeIndicators.length > 0 ? (
+            {isMounted && safeIndicators.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>

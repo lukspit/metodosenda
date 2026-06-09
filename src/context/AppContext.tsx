@@ -399,6 +399,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loading, setLoading] = useState(true);
   const [tenants, setTenants] = useState<Tenant[]>(MOCK_TENANTS);
   const [currentTenant, setCurrentTenantState] = useState<Tenant | null>(null);
+  const [lastTenantId, setLastTenantId] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>(MOCK_PROFILES);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
 
@@ -615,12 +616,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Recarregar dados quando mudar o tenant ativo
+  // Recarregar dados quando mudar o tenant ativo (apenas se for uma empresa diferente)
   useEffect(() => {
     if (currentTenant) {
-      refreshData();
+      if (currentTenant.id !== lastTenantId) {
+        setLastTenantId(currentTenant.id);
+        refreshData();
+      }
+    } else {
+      setLastTenantId(null);
     }
-  }, [currentTenant]);
+  }, [currentTenant, lastTenantId]);
 
   const setCurrentTenant = (tenant: Tenant) => {
     setCurrentTenantState(tenant);
