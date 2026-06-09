@@ -29,7 +29,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   const { currentTenant, tenants, setCurrentTenant, currentProfile } = useApp();
   const [showCulture, setShowCulture] = useState(false);
   const [showTenantDropdown, setShowTenantDropdown] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   if (pathname === '/login') {
     return <>{children}</>;

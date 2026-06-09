@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Send, Loader2, HelpCircle } from 'lucide-react';
+import { Mic, MicOff, Send, Loader2, Sparkles, Check, AlertCircle } from 'lucide-react';
 
 interface SmartInputProps {
   context: 'departments' | 'indicators' | 'action_plans' | 'meetings';
   placeholder: string;
-  onSuccess: (data: any) => void;
+  onSuccess: (data: any) => Promise<boolean | void> | boolean | void;
   existingData: any;
-  suggestions: string[];
+  suggestions?: string[];
 }
 
 export const SmartInput: React.FC<SmartInputProps> = ({
@@ -16,13 +16,12 @@ export const SmartInput: React.FC<SmartInputProps> = ({
   placeholder,
   onSuccess,
   existingData,
-  suggestions,
 }) => {
   const [text, setText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showHelp, setShowHelp] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'info' | 'success' } | null>(null);
   
   const recognitionRef = useRef<any>(null);
 
@@ -55,6 +54,7 @@ export const SmartInput: React.FC<SmartInputProps> = ({
       rec.onstart = () => {
         setIsListening(true);
         setError(null);
+        setStatusMessage(null);
       };
 
       rec.onresult = (event: any) => {
@@ -64,13 +64,19 @@ export const SmartInput: React.FC<SmartInputProps> = ({
 
       rec.onerror = (event: any) => {
         console.error('Erro no reconhecimento de voz:', event.error);
-        if (event.error === 'not-allowed') {
-          setError('Permissão de microfone negada. Ative nas configurações do navegador.');
-        } else if (event.error === 'no-speech') {
-          // Captura caso o usuário não fale nada de imediato (silêncio)
+        const errType = event.error;
+        if (errType === 'not-allowed') {
+          setError('Permissão do microfone negada. Ative a permissão de áudio nas configurações do seu navegador ou do sistema operacional (macOS).');
+        } else if (errType === 'no-speech') {
           setError('Nenhuma fala detectada. Clique no microfone e tente falar novamente.');
+        } else if (errType === 'audio-capture') {
+          setError('Microfone não detectado ou ocupado por outro aplicativo. Verifique se o seu microfone está conectado e livre.');
+        } else if (errType === 'network') {
+          setError('Falha de rede. O reconhecimento de voz exige conexão com a internet para funcionar.');
+        } else if (errType === 'aborted') {
+          setError('O reconhecimento de voz foi abortado. Tente novamente.');
         } else {
-          setError('Não consegui te ouvir direito. Tente novamente.');
+          setError(`Erro no microfone (${errType}). Verifique as permissões de áudio do seu sistema.`);
         }
         setIsListening(false);
       };
@@ -112,6 +118,10 @@ export const SmartInput: React.FC<SmartInputProps> = ({
 
     setLoading(true);
     setError(null);
+    setStatusMessage({
+      text: 'Estou analisando seu comando e gerando os dados...',
+      type: 'info'
+    });
 
     try {
       const response = await fetch('/api/ai/process', {
@@ -133,13 +143,37 @@ export const SmartInput: React.FC<SmartInputProps> = ({
       const result = await response.json();
 
       if (result.action === 'unknown') {
-        setError('Não entendi muito bem. Diga de outra forma ou use uma das sugestões abaixo.');
+        setError('Não entendi muito bem. Diga de outra forma ou digite o comando manualmente.');
+        setStatusMessage(null);
       } else {
-        setText(''); // Limpa o input
-        onSuccess(result); // Passa o JSON interpretado para o pai
+        // Atualiza a mensagem de status com a intenção da IA
+        setStatusMessage({
+          text: `Interpretado: ${result.explanation || 'Executando comando no banco...'}`,
+          type: 'info'
+        });
+
+        // Chama o callback da página pai (que faz a gravação no Supabase)
+        const isSuccess = await onSuccess(result);
+
+        if (isSuccess !== false) {
+          setStatusMessage({
+            text: `Pronto! Finalizado e criado com sucesso. (${result.explanation || 'Comando executado'})`,
+            type: 'success'
+          });
+          setText(''); // Limpa o input do texto no sucesso
+
+          // Remove a mensagem de sucesso depois de 6 segundos
+          setTimeout(() => {
+            setStatusMessage(null);
+          }, 6000);
+        } else {
+          setError('O comando foi interpretado, mas ocorreu um erro ao gravar as informações no Supabase.');
+          setStatusMessage(null);
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Erro ao conectar ao motor de IA.');
+      setStatusMessage(null);
     } finally {
       setLoading(false);
     }
@@ -164,21 +198,11 @@ export const SmartInput: React.FC<SmartInputProps> = ({
           placeholder={placeholder}
           rows={1}
           disabled={loading}
-          className="flex-1 bg-white text-slate-800 placeholder-slate-400 rounded-lg py-3 pl-4 pr-24 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C5A85A] focus:border-transparent resize-none min-h-[50px] shadow-inner transition-all duration-200"
+          className="flex-1 bg-white text-slate-800 placeholder-slate-400 rounded-lg py-3 pl-4 pr-16 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A] resize-none min-h-[50px] shadow-inner transition-all duration-200 text-xs"
         />
 
         {/* Botões do lado direito */}
-        <div className="absolute right-2 flex items-center gap-1.5">
-          {/* Ajuda */}
-          <button
-            type="button"
-            onClick={() => setShowHelp(!showHelp)}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all"
-            title="Dicas de comando"
-          >
-            <HelpCircle className="w-5 h-5" />
-          </button>
-
+        <div className="absolute right-2 flex items-center gap-1">
           {/* Microfone */}
           <button
             type="button"
@@ -190,7 +214,7 @@ export const SmartInput: React.FC<SmartInputProps> = ({
             }`}
             title={isListening ? 'Parar de ouvir' : 'Falar comando'}
           >
-            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
           </button>
 
           {/* Enviar */}
@@ -198,51 +222,49 @@ export const SmartInput: React.FC<SmartInputProps> = ({
             type="button"
             onClick={handleSend}
             disabled={loading || !text.trim()}
-            className="p-2 bg-[#C5A85A] hover:bg-[#B3964C] text-white disabled:opacity-40 rounded-full shadow-md transition-all duration-200 flex items-center justify-center"
+            className="p-2 bg-[#1E2538] hover:bg-[#2c3752] text-white disabled:opacity-40 rounded-full shadow transition-all duration-200 flex items-center justify-center"
           >
             {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin text-[#C5A85A]" />
             ) : (
-              <Send className="w-5 h-5" />
+              <Send className="w-4 h-4 text-white" />
             )}
           </button>
         </div>
       </div>
 
-      {/* Mensagens de feedback */}
+      {/* Ouvindo você */}
       {isListening && (
-        <p className="text-xs text-red-500 mt-2 font-medium flex items-center gap-1">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping inline-block" />
-          Ouvindo você... Fale agora.
+        <p className="text-[10px] text-red-500 mt-2 font-bold flex items-center gap-1.5 animate-pulse">
+          <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+          Ouvindo... Fale o seu comando.
         </p>
       )}
 
+      {/* Erro de feedback */}
       {error && (
-        <p className="text-xs text-red-600 mt-2 font-medium">
-          {error}
-        </p>
-      )}
-
-      {/* Dicas e Sugestões */}
-      {(showHelp || text.length === 0) && (
-        <div className="mt-3 border-t border-slate-100 pt-3 transition-all duration-300">
-          <p className="text-xs font-semibold text-slate-500 mb-2 flex items-center gap-1">
-            ✨ Sugestões de comandos (clique para usar):
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {suggestions.map((suggestion, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setText(suggestion)}
-                className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-full border border-slate-200/50 transition-all active:scale-95 text-left"
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
+        <div className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-2.5 rounded-md text-xs font-semibold mt-3 flex items-center gap-2 animate-fadeIn">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
+
+      {/* Status da IA (Processamento ou Sucesso) */}
+      {statusMessage && (
+        <div className={`px-4 py-3 rounded-md text-xs font-semibold mt-3 flex items-center gap-2.5 animate-fadeIn border ${
+          statusMessage.type === 'success'
+            ? 'bg-emerald-50 border-emerald-150 text-emerald-600'
+            : 'bg-[#C5A85A]/10 border-[#C5A85A]/25 text-[#C5A85A]'
+        }`}>
+          {statusMessage.type === 'success' ? (
+            <Check className="w-4 h-4 shrink-0" />
+          ) : (
+            <Sparkles className="w-4 h-4 fill-[#C5A85A]/20 animate-pulse shrink-0" />
+          )}
+          <span>{statusMessage.text}</span>
+        </div>
+      )}
+
     </div>
   );
 };

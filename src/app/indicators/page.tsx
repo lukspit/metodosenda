@@ -41,7 +41,7 @@ export default function IndicatorsPage() {
   const [filterDept, setFilterDept] = useState<string>('all');
   const [filterYear, setFilterYear] = useState<number>(2026);
   const [searchText, setSearchText] = useState<string>('');
-  const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+
 
   // Estados dos Modais
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -100,7 +100,7 @@ export default function IndicatorsPage() {
   };
 
   // Callback ao criar indicador via voz ou texto (IA)
-  const handleAISuccess = async (result: any) => {
+  const handleAISuccess = async (result: any): Promise<boolean> => {
     if (result.action === 'create' && result.data) {
       const { name, department_id, target, unit, year } = result.data;
       
@@ -113,11 +113,9 @@ export default function IndicatorsPage() {
         measurements: []
       });
 
-      if (success) {
-        setAiFeedback(result.explanation || `Indicador ${name} criado com sucesso!`);
-        setTimeout(() => setAiFeedback(null), 5000);
-      }
+      return success;
     }
+    return false;
   };
 
   // Handlers do Modal de Cadastro
@@ -146,11 +144,7 @@ export default function IndicatorsPage() {
   const handleDeleteClick = async (id: string, name: string) => {
     const confirm = window.confirm(`Tem certeza que deseja excluir o indicador "${name}"?`);
     if (confirm) {
-      const success = await deleteIndicator(id);
-      if (success) {
-        setAiFeedback(`Indicador "${name}" excluído com sucesso.`);
-        setTimeout(() => setAiFeedback(null), 5000);
-      }
+      await deleteIndicator(id);
     }
   };
 
@@ -198,8 +192,6 @@ export default function IndicatorsPage() {
     if (success) {
       setIsModalOpen(false);
       setSelectedInd(null);
-      setAiFeedback(selectedInd ? 'Indicador atualizado com sucesso!' : 'Novo indicador cadastrado com sucesso!');
-      setTimeout(() => setAiFeedback(null), 5000);
     } else {
       alert('Erro ao salvar o indicador.');
     }
@@ -235,8 +227,6 @@ export default function IndicatorsPage() {
     if (success) {
       setIsMeasurementsModalOpen(false);
       setSelectedInd(null);
-      setAiFeedback('Medições atualizadas com sucesso!');
-      setTimeout(() => setAiFeedback(null), 5000);
     } else {
       alert('Erro ao atualizar as medições.');
     }
@@ -301,13 +291,7 @@ export default function IndicatorsPage() {
         suggestions={suggestions}
       />
 
-      {/* Feedback de IA */}
-      {aiFeedback && (
-        <div className="bg-[#C5A85A]/10 border border-[#C5A85A]/35 text-[#C5A85A] px-4 py-3 rounded-md flex items-center gap-2 text-xs font-semibold animate-fadeIn">
-          <Sparkles className="w-4 h-4 fill-[#C5A85A]/20 animate-pulse" />
-          <span>Feedback: {aiFeedback}</span>
-        </div>
-      )}
+
 
       {/* Filtros de Visualização */}
       <div className="bg-white p-5 rounded-lg border border-slate-200/60 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">

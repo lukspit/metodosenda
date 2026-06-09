@@ -35,7 +35,7 @@ export default function ActionPlansPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterResp, setFilterResp] = useState<string>('all');
   const [searchText, setSearchText] = useState<string>('');
-  const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+
 
   // Estados dos Modais
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,7 +53,7 @@ export default function ActionPlansPage() {
   const [planProgress, setPlanProgress] = useState(0);
 
   // Callback ao criar plano via IA
-  const handleAISuccess = async (result: any) => {
+  const handleAISuccess = async (result: any): Promise<boolean> => {
     if (result.action === 'create' && result.data) {
       const { name, description, due_date, responsible_id, approver_id, department_id } = result.data;
       
@@ -68,11 +68,9 @@ export default function ActionPlansPage() {
         progress: 0
       });
 
-      if (success) {
-        setAiFeedback(result.explanation || `Plano de ação ${name} criado com sucesso!`);
-        setTimeout(() => setAiFeedback(null), 5000);
-      }
+      return success;
     }
+    return false;
   };
 
   // Atualizar progresso localmente
@@ -122,11 +120,7 @@ export default function ActionPlansPage() {
   const handleDeleteClick = async (id: string, name: string) => {
     const confirm = window.confirm(`Tem certeza que deseja excluir o plano de ação "${name}"?`);
     if (confirm) {
-      const success = await deleteActionPlan(id);
-      if (success) {
-        setAiFeedback(`Plano de ação "${name}" excluído com sucesso.`);
-        setTimeout(() => setAiFeedback(null), 5000);
-      }
+      await deleteActionPlan(id);
     }
   };
 
@@ -159,8 +153,6 @@ export default function ActionPlansPage() {
     if (success) {
       setIsModalOpen(false);
       setSelectedPlan(null);
-      setAiFeedback(selectedPlan ? 'Plano de ação atualizado com sucesso!' : 'Novo plano de ação cadastrado com sucesso!');
-      setTimeout(() => setAiFeedback(null), 5000);
     } else {
       alert('Erro ao salvar o plano de ação.');
     }
@@ -221,13 +213,7 @@ export default function ActionPlansPage() {
         suggestions={suggestions}
       />
 
-      {/* Feedback de IA */}
-      {aiFeedback && (
-        <div className="bg-[#C5A85A]/10 border border-[#C5A85A]/35 text-[#C5A85A] px-4 py-3 rounded-md flex items-center gap-2 text-xs font-semibold animate-fadeIn">
-          <Sparkles className="w-4 h-4 fill-[#C5A85A]/20" />
-          <span>Feedback: {aiFeedback}</span>
-        </div>
-      )}
+
 
       {/* Filtros */}
       <div className="bg-white p-5 rounded-lg border border-slate-200/60 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">

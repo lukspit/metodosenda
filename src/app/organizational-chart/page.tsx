@@ -119,7 +119,7 @@ export default function OrganizationalChart() {
   
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+
 
   // Estados dos Modais
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -158,11 +158,7 @@ export default function OrganizationalChart() {
   const handleDeleteClick = async (id: string, name: string) => {
     const confirm = window.confirm(`Tem certeza que deseja excluir o setor "${name}"? Todos os subsetores e planos de ação associados a ele perderão o vínculo.`);
     if (confirm) {
-      const success = await deleteDepartment(id);
-      if (success) {
-        setAiFeedback(`Setor "${name}" excluído com sucesso.`);
-        setTimeout(() => setAiFeedback(null), 5000);
-      }
+      await deleteDepartment(id);
     }
   };
 
@@ -194,8 +190,6 @@ export default function OrganizationalChart() {
     if (success) {
       setIsModalOpen(false);
       setSelectedDept(null);
-      setAiFeedback(selectedDept ? 'Setor atualizado com sucesso!' : 'Novo setor cadastrado com sucesso!');
-      setTimeout(() => setAiFeedback(null), 5000);
     } else {
       alert('Ocorreu um erro ao salvar o departamento. Tente novamente.');
     }
@@ -284,7 +278,7 @@ export default function OrganizationalChart() {
   }, [departments, buildHierarchy]);
 
   // Callback de sucesso da IA no SmartInput
-  const handleAISuccess = async (result: any) => {
+  const handleAISuccess = async (result: any): Promise<boolean> => {
     if (result.action === 'create' && result.data) {
       const { name, parent_id, manager_name } = result.data;
       
@@ -306,11 +300,9 @@ export default function OrganizationalChart() {
         manager_name: manager_name || undefined
       });
 
-      if (success) {
-        setAiFeedback(result.explanation || `Setor ${name} criado com sucesso!`);
-        setTimeout(() => setAiFeedback(null), 6000);
-      }
+      return success;
     }
+    return false;
   };
 
   // Filtrar lista de setores para pai: não pode ser ele mesmo!
@@ -362,13 +354,7 @@ export default function OrganizationalChart() {
         />
       </div>
 
-      {/* Feedback de IA */}
-      {aiFeedback && (
-        <div className="bg-[#C5A85A]/10 border border-[#C5A85A]/35 text-[#C5A85A] px-4 py-3 rounded-md flex items-center gap-2 text-xs font-semibold shrink-0 animate-fadeIn">
-          <Sparkles className="w-4 h-4 fill-[#C5A85A]/20" />
-          <span>Feedback: {aiFeedback}</span>
-        </div>
-      )}
+
 
       {/* Tela do Organograma (React Flow) */}
       <div className="flex-1 bg-white border border-slate-200/60 rounded-lg overflow-hidden shadow-sm relative min-h-[350px]">
