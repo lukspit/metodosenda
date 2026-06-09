@@ -111,7 +111,7 @@ export default function Dashboard() {
     
     indicators.forEach(ind => {
       const measurement = ind.measurements.find(m => m.month === monthIndex + 1);
-      if (measurement) {
+      if (measurement && measurement.value !== undefined) {
         // Simplificar valores monetários para exibir no gráfico
         dataObj[ind.name] = ind.unit === 'R$' ? measurement.value / 1000 : measurement.value;
       }

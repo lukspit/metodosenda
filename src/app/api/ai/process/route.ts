@@ -44,7 +44,7 @@ Exemplo de saída esperada:
 }`;
     } else if (context === 'indicators') {
       systemPrompt = `Você é o assistente inteligente de inteligência artificial da Senda Consultoria. 
-Sua tarefa é analisar o comando do usuário e transformá-lo em dados estruturados (JSON) para gerenciar os INDICADORES estratégicos da empresa.
+Sua tarefa é analisar o comando do usuário e transformá-lo em dados estruturados (JSON) para gerenciar os INDICADORES estratégicos da empresa. Os indicadores podem ser simples (lançamento direto de valores) ou calculados (compostos por variáveis e calculados por fórmulas).
 
 Lista de setores existentes:
 ${JSON.stringify(existingData?.departments || [])}
@@ -52,24 +52,41 @@ ${JSON.stringify(existingData?.departments || [])}
 Retorne um objeto JSON com as seguintes chaves:
 - "action": "create", "update", "delete" ou "unknown".
 - "data": Objeto com os dados extraídos:
-  - "name": Nome do indicador (ex: "Faturamento Mensal", "NPS", "Retenção de Talentos").
-  - "department_id": UUID do setor a que este indicador pertence (procure nos setores existentes pelo nome mais próximo, ex: se disser "indicador de TI", busque o UUID de TI). Retorne null se não especificado.
-  - "target": Valor da meta numérica (ex: 85, 150000, 10). Se for porcentagem, extraia apenas o número (ex: 85% vira 85).
-  - "unit": Unidade da meta. Escolha uma das opções: "%", "R$", "qtd", "horas", "outros".
+  - "name": Nome do indicador (ex: "Margem de Contribuição", "NPS Geral", "Faturamento").
+  - "department_id": UUID do setor a que este indicador pertence (procure nos setores existentes pelo nome mais próximo). Retorne null se não especificado.
+  - "target": Valor da meta numérica (ex: 85, 150000). Se for porcentagem, extraia apenas o número (ex: 85% vira 85).
+  - "unit": Unidade da meta. Escolha uma das opções: "%", "R$", "qtd", "horas", "outros". Se for uma unidade personalizada (ex: "leads", "clientes"), escolha "outros".
+  - "custom_unit": String contendo a unidade personalizada livre (ex: "leads", "clientes") caso "unit" seja "outros". Caso contrário, retorne "".
   - "year": Ano de vigência (se não especificado, use o ano atual).
+  - "chart_type": Tipo de gráfico recomendado para o indicador. Opções: "line", "bar", "area".
+  - "indicator_type": Tipo de indicador: "simple" (se for lançamento direto) ou "calculated" (se envolver cálculo a partir de variáveis/fórmula).
+  - "variables": Array de variáveis caso "indicator_type" seja "calculated". Cada variável deve ter:
+    - "id": Letra identificadora sequencial (ex: "A", "B", "C"...)
+    - "name": Nome da variável (ex: "Receita Bruta", "Custo de Vendas")
+    - "unit": Unidade da variável ("%", "R$", "qtd", "horas", ou qualquer texto livre)
+    Se for "simple", retorne array vazio [].
+  - "formula": String contendo a fórmula matemática utilizando os ids das variáveis (ex: "((A - B) / A) * 100"). Se for "simple", retorne "".
 - "explanation": Breve explicação em português do que será feito.
 
-Exemplo de saída esperada:
+Exemplo de saída esperada para indicador calculado:
 {
   "action": "create",
   "data": {
-    "name": "NPS (Satisfação do Cliente)",
-    "department_id": "uuid-do-comercial",
-    "target": 85,
+    "name": "Margem de Lucro",
+    "department_id": "uuid-do-financeiro",
+    "target": 25,
     "unit": "%",
-    "year": 2026
+    "custom_unit": "",
+    "year": 2026,
+    "chart_type": "area",
+    "indicator_type": "calculated",
+    "variables": [
+      { "id": "A", "name": "Receita de Vendas", "unit": "R$" },
+      { "id": "B", "name": "Custo de Mercadorias", "unit": "R$" }
+    ],
+    "formula": "((A - B) / A) * 100"
   },
-  "explanation": "Criando o indicador 'NPS' para o setor Comercial com meta de 85% para o ano de 2026."
+  "explanation": "Criando o indicador calculado 'Margem de Lucro' para o setor Financeiro com meta de 25% para o ano de 2026, baseado na receita e custos."
 }`;
     } else if (context === 'action_plans') {
       systemPrompt = `Você é o assistente inteligente de inteligência artificial da Senda Consultoria. 

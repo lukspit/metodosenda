@@ -32,6 +32,18 @@ export interface Department {
   code?: string;
 }
 
+export interface IndicatorVariable {
+  id: string; // Ex: 'A', 'B', 'C'
+  name: string;
+  unit: string;
+}
+
+export interface IndicatorMeasurement {
+  month: number;
+  value?: number;
+  variable_values?: Record<string, number>;
+}
+
 export interface Indicator {
   id: string;
   tenant_id: string;
@@ -41,8 +53,79 @@ export interface Indicator {
   unit: '%' | 'R$' | 'qtd' | 'horas' | 'outros';
   target: number;
   year: number;
-  measurements: { month: number; value: number }[];
+  chart_type?: 'line' | 'bar' | 'area';
+  indicator_type?: 'simple' | 'calculated';
+  variables?: IndicatorVariable[];
+  formula?: string;
+  custom_unit?: string;
+  measurements: IndicatorMeasurement[];
 }
+
+export function evaluateFormula(formula: string, variables: Record<string, number>): number {
+  if (!formula) return 0;
+  
+  // Limpar a fórmula de qualquer caractere perigoso
+  // Permite apenas letras de a-Z (variáveis), números, operadores +, -, *, /, (, ), ., e espaços
+  const cleanFormula = formula.replace(/[^A-Za-z0-9\+\-\*\/\(\)\.\s]/g, '');
+  
+  try {
+    const keys = Object.keys(variables);
+    const values = keys.map(k => variables[k] || 0);
+    
+    const evaluator = new Function(...keys, `try { return (${cleanFormula}); } catch(e) { return 0; }`);
+    const result = evaluator(...values);
+    
+    return isNaN(result) || !isFinite(result) ? 0 : result;
+  } catch (e) {
+    console.error("Erro ao avaliar fórmula:", e);
+    return 0;
+  }
+}
+
+export const parseIndicator = (dbInd: any): Indicator => {
+  let parsedMeasurements: IndicatorMeasurement[] = [];
+  let chart_type: 'line' | 'bar' | 'area' = 'line';
+  let indicator_type: 'simple' | 'calculated' = 'simple';
+  let variables: IndicatorVariable[] = [];
+  let formula = '';
+  let custom_unit = '';
+
+  const rawMeas = dbInd.measurements;
+
+  if (rawMeas && !Array.isArray(rawMeas)) {
+    // Novo formato (objeto)
+    parsedMeasurements = rawMeas.points || [];
+    chart_type = rawMeas.chart_type || 'line';
+    indicator_type = rawMeas.indicator_type || 'simple';
+    variables = rawMeas.variables || [];
+    formula = rawMeas.formula || '';
+    custom_unit = rawMeas.custom_unit || '';
+  } else {
+    // Formato antigo (array)
+    parsedMeasurements = rawMeas || [];
+  }
+
+  // Se for calculado, recalcula os valores de cada mês com base nas variáveis e fórmula
+  if (indicator_type === 'calculated' && formula) {
+    parsedMeasurements = parsedMeasurements.map(m => {
+      const computedValue = evaluateFormula(formula, m.variable_values || {});
+      return {
+        ...m,
+        value: computedValue
+      };
+    });
+  }
+
+  return {
+    ...dbInd,
+    chart_type,
+    indicator_type,
+    variables,
+    formula,
+    custom_unit,
+    measurements: parsedMeasurements
+  };
+};
 
 export interface ActionPlan {
   id: string;
@@ -160,6 +243,9 @@ const MOCK_INDICATORS: Indicator[] = [
     unit: '%',
     target: 85,
     year: 2026,
+    chart_type: 'line',
+    indicator_type: 'simple',
+    variables: [],
     measurements: [
       { month: 1, value: 80 },
       { month: 2, value: 82 },
@@ -177,6 +263,9 @@ const MOCK_INDICATORS: Indicator[] = [
     unit: 'R$',
     target: 250000,
     year: 2026,
+    chart_type: 'bar',
+    indicator_type: 'simple',
+    variables: [],
     measurements: [
       { month: 1, value: 210000 },
       { month: 2, value: 240000 },
@@ -186,20 +275,27 @@ const MOCK_INDICATORS: Indicator[] = [
     ]
   },
   {
-    id: 'i-sla',
+    id: 'i-lucratividade',
     tenant_id: 't-senda',
-    department_id: 'd-ti',
-    name: 'SLA de Atendimento Interno',
-    description: 'Tempo médio de resolução de chamados de suporte dos consultores.',
+    department_id: 'd-financeiro',
+    name: 'Lucratividade (Margem Líquida)',
+    description: 'Calculado automaticamente: ((Faturamento - Custos) / Faturamento) * 100',
     unit: '%',
-    target: 95,
+    target: 20,
     year: 2026,
+    chart_type: 'area',
+    indicator_type: 'calculated',
+    formula: '((A - B) / A) * 100',
+    variables: [
+      { id: 'A', name: 'Faturamento Bruto', unit: 'R$' },
+      { id: 'B', name: 'Custos Operacionais', unit: 'R$' }
+    ],
     measurements: [
-      { month: 1, value: 92 },
-      { month: 2, value: 94 },
-      { month: 3, value: 96 },
-      { month: 4, value: 95 },
-      { month: 5, value: 97 }
+      { month: 1, value: 14.28, variable_values: { A: 210000, B: 180000 } },
+      { month: 2, value: 16.67, variable_values: { A: 240000, B: 200000 } },
+      { month: 3, value: 21.57, variable_values: { A: 255000, B: 200000 } },
+      { month: 4, value: 19.35, variable_values: { A: 248000, B: 200000 } },
+      { month: 5, value: 22.22, variable_values: { A: 270000, B: 210000 } }
     ]
   }
 ];
@@ -359,9 +455,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .eq('tenant_id', currentTenant.id);
 
       if (!indError && indData && indData.length > 0) {
-        setIndicators(indData);
+        setIndicators(indData.map(parseIndicator));
       } else {
-        setIndicators(MOCK_INDICATORS.filter(i => i.tenant_id === currentTenant.id));
+        setIndicators(MOCK_INDICATORS.filter(i => i.tenant_id === currentTenant.id).map(parseIndicator));
       }
 
       // 4. Tentar carregar Planos de Ação
@@ -415,7 +511,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...d,
         manager_name: MOCK_PROFILES.find(p => p.id === d.manager_id)?.name || 'Sem responsável'
       })));
-      setIndicators(MOCK_INDICATORS.filter(i => i.tenant_id === currentTenant.id));
+      setIndicators(MOCK_INDICATORS.filter(i => i.tenant_id === currentTenant.id).map(parseIndicator));
       setActionPlans(MOCK_ACTION_PLANS.filter(ap => ap.tenant_id === currentTenant.id).map(p => ({
         ...p,
         responsible_name: MOCK_PROFILES.find(ap => ap.id === p.responsible_id)?.name || 'Não atribuído',
@@ -592,7 +688,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // CRUD Indicadores
   const createIndicator = async (ind: Partial<Indicator>): Promise<boolean> => {
     if (!currentTenant) return false;
-    const newInd = {
+
+    // Serialização inteligente: empacota metadados no JSONB measurements
+    const serializedMeasurements = {
+      points: ind.measurements || [],
+      chart_type: ind.chart_type || 'line',
+      indicator_type: ind.indicator_type || 'simple',
+      variables: ind.variables || [],
+      formula: ind.formula || '',
+      custom_unit: ind.custom_unit || ''
+    };
+
+    const newIndPayload = {
       tenant_id: currentTenant.id,
       department_id: ind.department_id || null,
       name: ind.name || 'Novo Indicador',
@@ -600,34 +707,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unit: ind.unit || '%',
       target: ind.target || 0,
       year: ind.year || 2026,
-      measurements: ind.measurements || []
+      measurements: serializedMeasurements
     };
 
     try {
-      const { error } = await supabase.from('indicators').insert([newInd]);
+      const { error } = await supabase.from('indicators').insert([newIndPayload]);
       if (error) throw error;
       await refreshData();
       return true;
     } catch (err) {
       console.error('Erro ao criar indicador no Supabase:', err);
-      setIndicators(prev => [...prev, { ...newInd, id: `i-${Math.random().toString(36).substr(2, 9)}` }]);
+      const localInd = {
+        ...ind,
+        id: `i-${Math.random().toString(36).substring(2, 11)}`,
+        tenant_id: currentTenant.id,
+        department_id: ind.department_id || null,
+        name: ind.name || 'Novo Indicador',
+        description: ind.description || '',
+        unit: ind.unit || '%',
+        target: ind.target || 0,
+        year: ind.year || 2026,
+        chart_type: ind.chart_type || 'line',
+        indicator_type: ind.indicator_type || 'simple',
+        variables: ind.variables || [],
+        formula: ind.formula || '',
+        custom_unit: ind.custom_unit || '',
+        measurements: ind.measurements || []
+      } as Indicator;
+      setIndicators(prev => [...prev, localInd]);
       return true;
     }
   };
 
   const updateIndicator = async (id: string, ind: Partial<Indicator>): Promise<boolean> => {
     try {
+      const existing = indicators.find(i => i.id === id);
+      if (!existing) return false;
+
+      const merged = { ...existing, ...ind };
+
+      const serializedMeasurements = {
+        points: merged.measurements || [],
+        chart_type: merged.chart_type || 'line',
+        indicator_type: merged.indicator_type || 'simple',
+        variables: merged.variables || [],
+        formula: merged.formula || '',
+        custom_unit: merged.custom_unit || ''
+      };
+
+      const payload = {
+        name: merged.name,
+        department_id: merged.department_id,
+        description: merged.description,
+        unit: merged.unit,
+        target: merged.target,
+        year: merged.year,
+        measurements: serializedMeasurements
+      };
+
       const { error } = await supabase
         .from('indicators')
-        .update({
-          name: ind.name,
-          department_id: ind.department_id,
-          description: ind.description,
-          unit: ind.unit,
-          target: ind.target,
-          year: ind.year,
-          measurements: ind.measurements
-        })
+        .update(payload)
         .eq('id', id);
       if (error) throw error;
       await refreshData();
