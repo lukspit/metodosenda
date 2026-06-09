@@ -50,15 +50,15 @@ export default function SettingsPage() {
     <div className="space-y-8 animate-fadeIn">
       {/* Cabeçalho */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Configurações</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Gerencie a identidade corporativa da empresa, usuários ativos e permissões de acesso.</p>
+        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Configurações</h1>
+        <p className="text-sm text-slate-500 mt-1">Gerencie a identidade corporativa da empresa, usuários ativos e permissões de acesso.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Lado Esquerdo: Gestão da Identidade e Cultura (8 Colunas) */}
-        <div className="lg:col-span-8 bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-6">
-          <h3 className="font-bold text-slate-850 dark:text-white text-base mb-2 flex items-center gap-2">
+        <div className="lg:col-span-8 bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm space-y-6">
+          <h3 className="font-bold text-slate-850 text-base mb-2 flex items-center gap-2">
             <Compass className="w-5 h-5 text-[#C5A85A]" />
             Identidade Estratégica (Cultura)
           </h3>
@@ -72,7 +72,7 @@ export default function SettingsPage() {
                   onChange={e => setMission(e.target.value)}
                   rows={3}
                   placeholder="Ex: Contribuir para a evolução das empresas..."
-                  className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
+                  className="w-full bg-slate-50 text-sm text-slate-700 border border-slate-200 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
                 />
               </div>
 
@@ -83,7 +83,7 @@ export default function SettingsPage() {
                   onChange={e => setVision(e.target.value)}
                   rows={3}
                   placeholder="Ex: Consultoria em Gestão Estratégica..."
-                  className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
+                  className="w-full bg-slate-50 text-sm text-slate-700 border border-slate-200 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
                 />
               </div>
             </div>
@@ -95,7 +95,7 @@ export default function SettingsPage() {
                 value={purpose}
                 onChange={e => setPurpose(e.target.value)}
                 placeholder="Ex: Ser a maior empresa de consultoria estratégica do país..."
-                className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
+                className="w-full bg-slate-50 text-sm text-slate-700 border border-slate-200 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
               />
             </div>
 
@@ -109,7 +109,7 @@ export default function SettingsPage() {
 Ética acima de tudo
 Foco estrito em resultado
 Agilidade e capricho"
-                className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
+                className="w-full bg-slate-50 text-sm text-slate-700 border border-slate-200 px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
               />
             </div>
 
@@ -128,9 +128,9 @@ Agilidade e capricho"
         <div className="lg:col-span-4 space-y-6">
           
           {/* Listagem de Membros da Equipe */}
-          <div className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800/80">
-              <h3 className="font-bold text-slate-850 dark:text-white text-sm flex items-center gap-2">
+          <div className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <h3 className="font-bold text-slate-850 text-sm flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#C5A85A]" />
                 Membros da Equipe ({profiles.length})
               </h3>
@@ -151,14 +151,14 @@ Agilidade e capricho"
                 return (
                   <div 
                     key={profile.id}
-                    className="flex items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-[#161B29]/65 border border-slate-100 dark:border-slate-800/80 rounded-md"
+                    className="flex items-center justify-between gap-3 p-3 bg-slate-50 border border-slate-100 rounded-md"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0">
                         {profile.name?.split(' ').map(n => n[0]).slice(0, 2).join('') || 'U'}
                       </div>
                       <div className="min-w-0">
-                        <h4 className="font-bold text-xs text-slate-850 dark:text-slate-200 truncate">{profile.name}</h4>
+                        <h4 className="font-bold text-xs text-slate-850 truncate">{profile.name}</h4>
                         <p className="text-[10px] text-slate-450 truncate">{profile.email}</p>
                       </div>
                     </div>
@@ -169,7 +169,7 @@ Agilidade e capricho"
                           ? 'bg-rose-500/10 text-rose-500' 
                           : profile.role === 'consultor'
                             ? 'bg-[#C5A85A]/10 text-[#C5A85A]'
-                            : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                            : 'bg-slate-200 text-slate-500'
                       }`}>
                         {profile.role}
                       </span>
@@ -182,13 +182,13 @@ Agilidade e capricho"
           </div>
 
           {/* Permissões do Sistema */}
-          <div className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-3">
-            <h3 className="font-bold text-slate-850 dark:text-white text-sm flex items-center gap-2">
+          <div className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm space-y-3">
+            <h3 className="font-bold text-slate-850 text-sm flex items-center gap-2">
               <Shield className="w-4 h-4 text-[#C5A85A]" />
               Funções de Acesso
             </h3>
             
-            <div className="space-y-2 text-xs text-slate-500 dark:text-slate-400">
+            <div className="space-y-2 text-xs text-slate-500">
               <div className="flex items-start gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
                 <p><strong>Admin:</strong> Acesso total às configurações, orçamentos, organograma e exclusão de dados.</p>

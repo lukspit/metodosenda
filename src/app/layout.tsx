@@ -6,6 +6,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Método Senda Core",
   description: "Plataforma de Consultoria Estratégica Assistida por IA",
+  icons: {
+    icon: '/icon.png',
+  }
 };
 
 export default function RootLayout({
@@ -15,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className="h-full antialiased">
-      <body className="min-h-full bg-[#F8F9FC] dark:bg-[#0F172A] text-slate-800 dark:text-slate-100 font-sans">
+      <body className="min-h-full bg-white text-slate-800 font-sans">
         <AppProvider>
           <DashboardLayout>{children}</DashboardLayout>
         </AppProvider>
@@ -23,4 +26,5 @@ export default function RootLayout({
     </html>
   );
 }
+
 

@@ -85,8 +85,8 @@ export default function IndicatorsPage() {
       {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Indicadores</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Acompanhamento e evolução de metas empresariais por departamento.</p>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Indicadores</h1>
+          <p className="text-sm text-slate-500 mt-1">Acompanhamento e evolução de metas empresariais por departamento.</p>
         </div>
       </div>
 
@@ -108,8 +108,8 @@ export default function IndicatorsPage() {
       )}
 
       {/* Filtros de Visualização */}
-      <div className="bg-white dark:bg-[#1E2538] p-5 rounded-lg border border-slate-200/60 dark:border-slate-850 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 font-semibold self-start md:self-auto">
+      <div className="bg-white p-5 rounded-lg border border-slate-200/60 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-slate-700 font-semibold self-start md:self-auto">
           <Filter className="w-4 h-4 text-[#C5A85A]" />
           Filtros de Busca
         </div>
@@ -120,13 +120,13 @@ export default function IndicatorsPage() {
             placeholder="Buscar por nome..."
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
-            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-750 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
+            className="bg-slate-50 text-sm text-slate-750 border border-slate-200 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
           />
 
           <select
             value={filterDept}
             onChange={e => setFilterDept(e.target.value)}
-            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-750 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
+            className="bg-slate-50 text-sm text-slate-750 border border-slate-200 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
           >
             <option value="all">Todos os setores</option>
             {departments.map(d => (
@@ -137,7 +137,7 @@ export default function IndicatorsPage() {
           <select
             value={filterYear}
             onChange={e => setFilterYear(Number(e.target.value))}
-            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-750 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
+            className="bg-slate-50 text-sm text-slate-750 border border-slate-200 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
           >
             <option value={2026}>Ano: 2026</option>
             <option value={2027}>Ano: 2027</option>
@@ -157,16 +157,16 @@ export default function IndicatorsPage() {
             return (
               <div 
                 key={ind.id}
-                className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-200"
+                className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-200"
               >
                 <div>
                   {/* Cabeçalho do Card */}
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-550 dark:text-slate-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-wide">
+                      <span className="text-[10px] bg-slate-100 text-slate-550 px-2.5 py-1 rounded-full font-bold uppercase tracking-wide">
                         {deptName}
                       </span>
-                      <h3 className="font-extrabold text-slate-800 dark:text-white text-base mt-2">{ind.name}</h3>
+                      <h3 className="font-extrabold text-slate-800 text-base mt-2">{ind.name}</h3>
                       <p className="text-xs text-slate-400 mt-0.5 min-h-[32px]">{ind.description || 'Sem descrição'}</p>
                     </div>
 
@@ -181,10 +181,10 @@ export default function IndicatorsPage() {
                   </div>
 
                   {/* Resultados Rápidos */}
-                  <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-[#161B29]/65 p-3 rounded-md border border-slate-100 dark:border-slate-800/80 mb-6">
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-md border border-slate-100 mb-6">
                     <div>
                       <span className="text-[9px] text-slate-400 uppercase tracking-wider block font-semibold">Medição Recente</span>
-                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      <span className="text-sm font-bold text-slate-800">
                         {currentVal !== null ? (
                           <>
                             {ind.unit === 'R$' ? 'R$ ' : ''}
@@ -212,7 +212,7 @@ export default function IndicatorsPage() {
                     {ind.measurements.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" className="dark:stroke-slate-800/50" />
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" className="" />
                           <XAxis dataKey="name" stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
                           <YAxis stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
                           <Tooltip 
@@ -236,7 +236,7 @@ export default function IndicatorsPage() {
                         </LineChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-[11px] text-slate-400 bg-slate-50 dark:bg-transparent rounded-lg border border-dashed border-slate-200 dark:border-slate-850">
+                      <div className="h-full flex items-center justify-center text-[11px] text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
                         Adicione a primeira medição mensal para gerar o gráfico.
                       </div>
                     )}
@@ -244,7 +244,7 @@ export default function IndicatorsPage() {
                 </div>
 
                 {/* Ação para Adicionar Medição (Mock) */}
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
                   <span className="text-[10px] text-slate-400">Ano Fiscal: {ind.year}</span>
                   <button
                     onClick={() => alert('Para inserir medições reais de cada mês, fale com a IA ou use as configurações do indicador.')}
@@ -257,7 +257,7 @@ export default function IndicatorsPage() {
             );
           })
         ) : (
-          <div className="col-span-2 text-center py-12 bg-white dark:bg-[#1E2538] rounded-lg border border-dashed border-slate-350 dark:border-slate-800 text-slate-400 text-sm">
+          <div className="col-span-2 text-center py-12 bg-white rounded-lg border border-dashed border-slate-350 text-slate-400 text-sm">
             Nenhum indicador encontrado com os filtros atuais.
           </div>
         )}

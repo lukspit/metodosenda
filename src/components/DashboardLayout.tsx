@@ -50,7 +50,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   return (
-    <div className="flex h-screen bg-white dark:bg-[#0F172A] overflow-hidden font-sans transition-colors duration-300">
+    <div className="flex h-screen bg-white overflow-hidden font-sans transition-colors duration-300">
       
       {/* 1. Sidebar Lateral */}
       <aside className={`bg-[#1E2538] text-slate-300 flex flex-col justify-between shrink-0 shadow-xl border-r border-slate-800 transition-all duration-300 ${

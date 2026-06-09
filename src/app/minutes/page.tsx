@@ -109,8 +109,8 @@ export default function MinutesPage() {
     <div className="space-y-8 animate-fadeIn">
       {/* Cabeçalho */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Atas de Reunião</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Escreva atas, gere resumos executivos e extraia planos de ação automaticamente usando IA.</p>
+        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Atas de Reunião</h1>
+        <p className="text-sm text-slate-500 mt-1">Escreva atas, gere resumos executivos e extraia planos de ação automaticamente usando IA.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -118,8 +118,8 @@ export default function MinutesPage() {
         {/* Lado Esquerdo: Redigir Ata & Lista de Atas (7 Colunas) */}
         <div className="lg:col-span-7 space-y-6">
           {/* Escrever Nova Ata */}
-          <div className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm">
-            <h3 className="font-bold text-slate-800 dark:text-white text-base mb-4 flex items-center gap-2">
+          <div className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm">
+            <h3 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5 text-[#C5A85A]" />
               Nova Ata de Reunião
             </h3>
@@ -132,7 +132,7 @@ export default function MinutesPage() {
                   placeholder="Ex: Alinhamento Estratégico Mensal - Junho/2026"
                   value={newTitle}
                   onChange={e => setNewTitle(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
+                  className="w-full bg-slate-50 text-sm text-slate-700 border border-slate-200 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
                 />
               </div>
 
@@ -143,7 +143,7 @@ export default function MinutesPage() {
                   value={newContent}
                   onChange={e => setNewContent(e.target.value)}
                   rows={6}
-                  className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
+                  className="w-full bg-slate-50 text-sm text-slate-700 border border-slate-200 px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
                 />
               </div>
 
@@ -161,21 +161,21 @@ export default function MinutesPage() {
 
           {/* Histórico de Atas */}
           <div className="space-y-3">
-            <h3 className="font-bold text-slate-800 dark:text-white text-sm uppercase tracking-widest text-slate-400">Atas Registradas</h3>
+            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-widest text-slate-400">Atas Registradas</h3>
             
             {meetingMinutes.length > 0 ? (
               <div className="grid grid-cols-1 gap-3">
                 {meetingMinutes.map((minute) => (
                   <div 
                     key={minute.id}
-                    className="bg-white dark:bg-[#1E2538] rounded-md p-4 border border-slate-200/50 dark:border-slate-800/80 shadow-sm flex items-center justify-between gap-4 transition-all hover:bg-slate-50/50 dark:hover:bg-slate-800/20"
+                    className="bg-white rounded-md p-4 border border-slate-200/50 shadow-sm flex items-center justify-between gap-4 transition-all hover:bg-slate-50/50"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-[#C5A85A]/10 text-[#C5A85A] flex items-center justify-center shrink-0">
                         <FileText className="w-5 h-5" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-slate-800 dark:text-white text-sm">{minute.title}</h4>
+                        <h4 className="font-bold text-slate-800 text-sm">{minute.title}</h4>
                         <p className="text-[10px] text-slate-400 mt-0.5">
                           Cadastrado em: {new Date(minute.created_at).toLocaleDateString('pt-BR')} às {new Date(minute.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                         </p>

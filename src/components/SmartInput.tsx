@@ -125,7 +125,7 @@ export const SmartInput: React.FC<SmartInputProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#1E2538]/5 border border-slate-200 dark:border-slate-800 rounded-md p-4 shadow-sm backdrop-blur-md transition-all duration-300">
+    <div className="w-full bg-[#1E2538]/5 border border-slate-200 rounded-md p-4 shadow-sm backdrop-blur-md transition-all duration-300">
       
       {/* Barra de input */}
       <div className="relative flex items-center gap-2">
@@ -136,7 +136,7 @@ export const SmartInput: React.FC<SmartInputProps> = ({
           placeholder={placeholder}
           rows={1}
           disabled={loading}
-          className="flex-1 bg-white dark:bg-[#1A2332] text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 rounded-lg py-3 pl-4 pr-24 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-[#C5A85A] focus:border-transparent resize-none min-h-[50px] shadow-inner transition-all duration-200"
+          className="flex-1 bg-white text-slate-800 placeholder-slate-400 rounded-lg py-3 pl-4 pr-24 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C5A85A] focus:border-transparent resize-none min-h-[50px] shadow-inner transition-all duration-200"
         />
 
         {/* Botões do lado direito */}
@@ -145,7 +145,7 @@ export const SmartInput: React.FC<SmartInputProps> = ({
           <button
             type="button"
             onClick={() => setShowHelp(!showHelp)}
-            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all"
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all"
             title="Dicas de comando"
           >
             <HelpCircle className="w-5 h-5" />
@@ -158,7 +158,7 @@ export const SmartInput: React.FC<SmartInputProps> = ({
             className={`p-2 rounded-full transition-all duration-200 ${
               isListening
                 ? 'bg-red-500 text-white animate-pulse'
-                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
             }`}
             title={isListening ? 'Parar de ouvir' : 'Falar comando'}
           >
@@ -190,15 +190,15 @@ export const SmartInput: React.FC<SmartInputProps> = ({
       )}
 
       {error && (
-        <p className="text-xs text-red-600 dark:text-red-400 mt-2 font-medium">
+        <p className="text-xs text-red-600 mt-2 font-medium">
           {error}
         </p>
       )}
 
       {/* Dicas e Sugestões */}
       {(showHelp || text.length === 0) && (
-        <div className="mt-3 border-t border-slate-100 dark:border-slate-800 pt-3 transition-all duration-300">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
+        <div className="mt-3 border-t border-slate-100 pt-3 transition-all duration-300">
+          <p className="text-xs font-semibold text-slate-500 mb-2 flex items-center gap-1">
             ✨ Sugestões de comandos (clique para usar):
           </p>
           <div className="flex flex-wrap gap-2">
@@ -207,7 +207,7 @@ export const SmartInput: React.FC<SmartInputProps> = ({
                 key={idx}
                 type="button"
                 onClick={() => setText(suggestion)}
-                className="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-full border border-slate-200/50 dark:border-slate-700/50 transition-all active:scale-95 text-left"
+                className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-full border border-slate-200/50 transition-all active:scale-95 text-left"
               >
                 {suggestion}
               </button>

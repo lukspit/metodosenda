@@ -121,8 +121,8 @@ export default function CalendarPage() {
     <div className="space-y-8 animate-fadeIn">
       {/* Cabeçalho */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Agenda</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Calendário integrado de reuniões, consultorias e alinhamentos.</p>
+        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Agenda</h1>
+        <p className="text-sm text-slate-500 mt-1">Calendário integrado de reuniões, consultorias e alinhamentos.</p>
       </div>
 
       {/* Input de IA Contextual */}
@@ -146,17 +146,17 @@ export default function CalendarPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Calendário Mensal (8 Colunas) */}
-        <div className="lg:col-span-8 bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm">
+        <div className="lg:col-span-8 bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm">
           {/* Header do Calendário */}
-          <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800/80">
-            <h3 className="font-extrabold text-slate-800 dark:text-white text-lg capitalize">
+          <div className="flex items-center justify-between pb-6 border-b border-slate-100">
+            <h3 className="font-extrabold text-slate-800 text-lg capitalize">
               {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
             </h3>
             <div className="flex gap-2">
-              <button onClick={prevMonth} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 transition-colors">
+              <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <button onClick={nextMonth} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 transition-colors">
+              <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>
@@ -186,10 +186,10 @@ export default function CalendarPage() {
                   onClick={() => setSelectedDate(day)}
                   className={`min-h-[75px] p-2 rounded-md flex flex-col justify-between border transition-all duration-200 text-left relative ${
                     !isCurrentMonth 
-                      ? 'text-slate-300 dark:text-slate-650 bg-slate-50/30 dark:bg-transparent border-transparent' 
+                      ? 'text-slate-300 bg-slate-50/30 border-transparent' 
                       : isSelected
                         ? 'bg-[#C5A85A] text-white border-[#C5A85A] shadow-md shadow-[#C5A85A]/20'
-                        : 'bg-white dark:bg-[#161B29]/30 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-350'
+                        : 'bg-white hover:bg-slate-50 border-slate-100 text-slate-700'
                   }`}
                 >
                   <span className="font-bold text-xs">{format(day, 'd')}</span>
@@ -203,7 +203,7 @@ export default function CalendarPage() {
                           className={`text-[8px] px-1.5 py-0.5 rounded truncate font-medium ${
                             isSelected 
                               ? 'bg-white/20 text-white' 
-                              : 'bg-[#C5A85A]/15 text-[#C5A85A] dark:bg-[#C5A85A]/10'
+                              : 'bg-[#C5A85A]/15 text-[#C5A85A]'
                           }`}
                         >
                           {m.title}
@@ -226,10 +226,10 @@ export default function CalendarPage() {
         <div className="lg:col-span-4 space-y-6">
           
           {/* Reuniões do Dia Selecionado */}
-          <div className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800/80">
+          <div className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <div>
-                <h3 className="font-bold text-slate-800 dark:text-white text-sm">Reuniões do Dia</h3>
+                <h3 className="font-bold text-slate-800 text-sm">Reuniões do Dia</h3>
                 <p className="text-[10px] text-slate-400 capitalize mt-0.5">
                   {format(selectedDate, 'eeee, d MMMM', { locale: ptBR })}
                 </p>
@@ -252,9 +252,9 @@ export default function CalendarPage() {
                   return (
                     <div 
                       key={meet.id} 
-                      className="border-l-4 border-[#C5A85A] bg-slate-50 dark:bg-[#161B29]/65 px-4 py-3 rounded-r-xl border-y border-r border-slate-100 dark:border-slate-800/80 space-y-2"
+                      className="border-l-4 border-[#C5A85A] bg-slate-50 px-4 py-3 rounded-r-xl border-y border-r border-slate-100 space-y-2"
                     >
-                      <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200 leading-snug">{meet.title}</h4>
+                      <h4 className="font-bold text-xs text-slate-800 leading-snug">{meet.title}</h4>
                       {meet.description && <p className="text-[10px] text-slate-450 font-light">{meet.description}</p>}
                       
                       <div className="flex flex-wrap gap-y-1 justify-between items-center text-[9px] text-slate-500 pt-1">
@@ -277,8 +277,8 @@ export default function CalendarPage() {
 
           {/* Formulário de Agendamento Manual */}
           {showAddForm && (
-            <div className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm animate-fadeIn">
-              <h3 className="font-bold text-slate-800 dark:text-white text-sm mb-4">Novo Agendamento</h3>
+            <div className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm animate-fadeIn">
+              <h3 className="font-bold text-slate-800 text-sm mb-4">Novo Agendamento</h3>
               <form onSubmit={handleManualSubmit} className="space-y-4">
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Título</label>
@@ -288,7 +288,7 @@ export default function CalendarPage() {
                     value={newTitle}
                     onChange={e => setNewTitle(e.target.value)}
                     placeholder="Ex: Conselho Trimestral"
-                    className="w-full bg-slate-50 dark:bg-[#1A2332] text-xs text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                    className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
                   />
                 </div>
 
@@ -300,7 +300,7 @@ export default function CalendarPage() {
                       required
                       value={newStart}
                       onChange={e => setNewStart(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-[#1A2332] text-xs text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                      className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
                     />
                   </div>
                   <div>
@@ -310,7 +310,7 @@ export default function CalendarPage() {
                       required
                       value={newEnd}
                       onChange={e => setNewEnd(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-[#1A2332] text-xs text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                      className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
                     />
                   </div>
                 </div>
@@ -320,7 +320,7 @@ export default function CalendarPage() {
                   <select
                     value={newDept}
                     onChange={e => setNewDept(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-[#1A2332] text-xs text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                    className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
                   >
                     <option value="">Geral</option>
                     {departments.map(d => (
@@ -336,7 +336,7 @@ export default function CalendarPage() {
                     onChange={e => setNewDesc(e.target.value)}
                     rows={2}
                     placeholder="Pauta da reunião..."
-                    className="w-full bg-slate-50 dark:bg-[#1A2332] text-xs text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A] resize-none"
+                    className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C5A85A] resize-none"
                   />
                 </div>
 
@@ -344,7 +344,7 @@ export default function CalendarPage() {
                   <button 
                     type="button" 
                     onClick={() => setShowAddForm(false)} 
-                    className="px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 font-medium transition-colors"
+                    className="px-3 py-1.5 hover:bg-slate-100 rounded-lg text-slate-500 font-medium transition-colors"
                   >
                     Cancelar
                   </button>
