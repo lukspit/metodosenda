@@ -61,7 +61,13 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           <div className={`h-16 flex items-center border-b border-slate-800 bg-[#161B29] transition-all duration-300 ${
             isSidebarOpen ? 'gap-3 px-5 justify-start' : 'px-0 justify-center'
           }`}>
-            <img src="/logo.png" className="h-7 w-auto object-contain shrink-0" alt="Logo Senda" />
+            <img 
+              src="/logo.png" 
+              className={`object-contain shrink-0 transition-all duration-300 ${
+                isSidebarOpen ? 'h-5 w-auto' : 'h-6 w-auto'
+              }`} 
+              alt="Logo Senda" 
+            />
             {isSidebarOpen && (
               <div className="animate-fadeIn">
                 <span className="font-extrabold text-white text-lg tracking-wider">MÉTODO</span>
@@ -69,6 +75,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
               </div>
             )}
           </div>
+
 
           {/* Menu Principal */}
           <nav className="mt-6 px-3 space-y-1">
