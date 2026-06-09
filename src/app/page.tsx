@@ -30,6 +30,22 @@ export default function Dashboard() {
   const [aiInsight, setAiInsight] = useState<string>('');
   const [loadingInsight, setLoadingInsight] = useState(false);
 
+  // Fallbacks de segurança para arrays e objetos
+  const safeIndicators = useMemo(() => indicators || [], [indicators]);
+  const safeActionPlans = useMemo(() => actionPlans || [], [actionPlans]);
+
+  // Função auxiliar de formatação de data robusta
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return 'Não definida';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return 'Não definida';
+      return d.toLocaleDateString('pt-BR');
+    } catch {
+      return 'Não definida';
+    }
+  };
+
   // Diagnóstico pré-gerado caso o usuário ainda não tenha solicitado via IA
   const getStaticDiagnostic = () => {
     return `
@@ -51,14 +67,19 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (currentTenant) {
-      const saved = currentTenant.dashboard_insights || (typeof window !== 'undefined' ? localStorage.getItem(`insights-${currentTenant.id}`) : null);
+      let saved = null;
+      try {
+        saved = currentTenant.dashboard_insights || (typeof window !== 'undefined' ? localStorage.getItem(`insights-${currentTenant.id}`) : null);
+      } catch (e) {
+        console.warn('Erro ao acessar localStorage no dashboard:', e);
+      }
       if (saved) {
         setAiInsight(saved);
       } else {
         setAiInsight(getStaticDiagnostic());
       }
     }
-  }, [currentTenant, actionPlans]);
+  }, [currentTenant, safeActionPlans]);
 
   // Função para chamar a API e gerar insights reais via OpenRouter/Gemini
   const generateRealInsights = async () => {
@@ -71,8 +92,8 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          indicators,
-          actionPlans,
+          indicators: safeIndicators,
+          actionPlans: safeActionPlans,
           tenantName: currentTenant.name
         }),
       });
@@ -80,7 +101,7 @@ export default function Dashboard() {
       if (!response.ok) throw new Error('Erro ao gerar insights');
       
       const data = await response.json();
-      if (data.insight) {
+      if (data && data.insight && typeof data.insight === 'string') {
         // Formatar quebras de linha para HTML simples para renderizar bonito
         const formattedInsight = data.insight
           .replace(/\n/g, '<br />')
@@ -93,7 +114,12 @@ export default function Dashboard() {
       }
     } catch (err) {
       console.error(err);
-      const saved = currentTenant.dashboard_insights || (typeof window !== 'undefined' ? localStorage.getItem(`insights-${currentTenant.id}`) : null);
+      let saved = null;
+      try {
+        saved = currentTenant.dashboard_insights || (typeof window !== 'undefined' ? localStorage.getItem(`insights-${currentTenant.id}`) : null);
+      } catch (e) {
+        console.warn('Erro ao acessar localStorage no catch de insights:', e);
+      }
       if (saved) {
         setAiInsight(saved + '<p class="text-amber-500 text-[10px] mt-2">Nota: Conexão offline. Exibindo diagnóstico salvo anteriormente.</p>');
       } else {
@@ -108,23 +134,25 @@ export default function Dashboard() {
     return <SkeletonDashboard />;
   }
 
-  // Cálculos rápidos de métricas
-  const totalPlans = actionPlans.length;
-  const completedPlans = actionPlans.filter(p => p.status === 'concluido').length;
-  const delayedPlans = actionPlans.filter(p => p.status === 'atrasado').length;
+  // Cálculos rápidos de métricas com segurança
+  const totalPlans = safeActionPlans.length;
+  const completedPlans = safeActionPlans.filter(p => p && p.status === 'concluido').length;
+  const delayedPlans = safeActionPlans.filter(p => p && p.status === 'atrasado').length;
   const completionRate = totalPlans > 0 ? Math.round((completedPlans / totalPlans) * 100) : 0;
 
   // Calcular atingimento médio real dos KPIs baseados na medição mais recente de cada um
   const averageAtingimento = useMemo(() => {
-    const activeIndicators = indicators.filter(ind => ind.year === 2026);
+    const activeIndicators = safeIndicators.filter(ind => ind && ind.year === 2026);
     if (activeIndicators.length === 0) return 0;
 
     let totalAtingimento = 0;
     let indicatorsWithData = 0;
 
     activeIndicators.forEach(ind => {
-      const lastMeas = ind.measurements.length > 0 
-        ? ind.measurements[ind.measurements.length - 1] 
+      if (!ind) return;
+      const measurements = ind.measurements || [];
+      const lastMeas = measurements.length > 0 
+        ? measurements[measurements.length - 1] 
         : null;
       
       if (lastMeas && typeof lastMeas.value === 'number' && ind.target > 0) {
@@ -137,26 +165,30 @@ export default function Dashboard() {
     return indicatorsWithData > 0 
       ? Math.round(totalAtingimento / indicatorsWithData) 
       : 0;
-  }, [indicators]);
+  }, [safeIndicators]);
 
   // Mapeamento de meses para o gráfico
   const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   
-  // Preparar dados do gráfico unificado de indicadores
-  const chartData = Array.from({ length: 5 }).map((_, index) => {
-    const monthIndex = index; // Jan a Mai
-    const dataObj: any = { name: monthNames[monthIndex] };
-    
-    indicators.forEach(ind => {
-      const measurement = ind.measurements.find(m => m.month === monthIndex + 1);
-      if (measurement && measurement.value !== undefined) {
-        // Simplificar valores monetários para exibir no gráfico
-        dataObj[ind.name] = ind.unit === 'R$' ? measurement.value / 1000 : measurement.value;
-      }
+  // Preparar dados do gráfico unificado de indicadores com segurança e useMemo
+  const chartData = useMemo(() => {
+    return Array.from({ length: 5 }).map((_, index) => {
+      const monthIndex = index; // Jan a Mai
+      const dataObj: any = { name: monthNames[monthIndex] };
+      
+      safeIndicators.forEach(ind => {
+        if (!ind || !ind.name) return;
+        const measurements = ind.measurements || [];
+        const measurement = measurements.find(m => m && m.month === monthIndex + 1);
+        if (measurement && measurement.value !== undefined) {
+          // Simplificar valores monetários para exibir no gráfico
+          dataObj[ind.name] = ind.unit === 'R$' ? measurement.value / 1000 : measurement.value;
+        }
+      });
+      
+      return dataObj;
     });
-    
-    return dataObj;
-  });
+  }, [safeIndicators]);
 
   return (
     <div className="space-y-8 animate-fadeIn">
@@ -284,7 +316,7 @@ export default function Dashboard() {
           </div>
 
           <div className="h-[320px] w-full pt-4">
-            {indicators.length > 0 ? (
+            {safeIndicators.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
@@ -305,17 +337,20 @@ export default function Dashboard() {
                       fontSize: '12px'
                     }} 
                   />
-                  {indicators.slice(0, 4).map((ind, index) => (
-                    <Area 
-                      key={ind.id}
-                      type="monotone" 
-                      dataKey={ind.name} 
-                      stroke={index === 0 ? '#C5A85A' : index === 1 ? '#10B981' : index === 2 ? '#3B82F6' : '#8B5CF6'} 
-                      strokeWidth={2.5}
-                      fillOpacity={1} 
-                      fill="url(#colorInd)" 
-                    />
-                  ))}
+                  {safeIndicators.slice(0, 4).map((ind, index) => {
+                    if (!ind || !ind.name) return null;
+                    return (
+                      <Area 
+                        key={ind.id || index}
+                        type="monotone" 
+                        dataKey={ind.name} 
+                        stroke={index === 0 ? '#C5A85A' : index === 1 ? '#10B981' : index === 2 ? '#3B82F6' : '#8B5CF6'} 
+                        strokeWidth={2.5}
+                        fillOpacity={1} 
+                        fill="url(#colorInd)" 
+                      />
+                    );
+                  })}
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
@@ -344,7 +379,7 @@ export default function Dashboard() {
         </div>
 
         <div className="overflow-x-auto">
-          {actionPlans.length > 0 ? (
+          {safeActionPlans.length > 0 ? (
             <table className="w-full text-sm text-left text-slate-500">
               <thead className="text-xs text-slate-400 uppercase bg-slate-50 rounded-lg">
                 <tr>
@@ -356,30 +391,30 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {actionPlans
-                  .filter(p => p.status !== 'concluido' && p.status !== 'cancelado')
+                {safeActionPlans
+                  .filter(p => p && p.status !== 'concluido' && p.status !== 'cancelado')
                   .slice(0, 4)
-                  .map((plan) => (
-                    <tr key={plan.id} className="bg-white border-b border-slate-100 hover:bg-slate-50/50 transition-all">
+                  .map((plan, index) => (
+                    <tr key={plan.id || index} className="bg-white border-b border-slate-100 hover:bg-slate-50/50 transition-all">
                       <td className="px-6 py-4 font-semibold text-slate-800">
-                        {plan.name}
-                        <p className="text-xs font-normal text-slate-400 mt-0.5 line-clamp-1">{plan.description}</p>
+                        {plan.name || 'Sem nome'}
+                        <p className="text-xs font-normal text-slate-400 mt-0.5 line-clamp-1">{plan.description || ''}</p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
                           <CalendarDays className="w-3.5 h-3.5 text-[#C5A85A]" />
-                          {new Date(plan.due_date).toLocaleDateString('pt-BR')}
+                          {formatDate(plan.due_date)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-700">
-                        {plan.responsible_name}
+                        {plan.responsible_name || 'Não atribuído'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <div className="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-[#C5A85A] h-full rounded-full" style={{ width: `${plan.progress}%` }} />
+                            <div className="bg-[#C5A85A] h-full rounded-full" style={{ width: `${typeof plan.progress === 'number' ? plan.progress : 0}%` }} />
                           </div>
-                          <span className="text-xs font-medium text-slate-500">{plan.progress}%</span>
+                          <span className="text-xs font-medium text-slate-500">{typeof plan.progress === 'number' ? plan.progress : 0}%</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
