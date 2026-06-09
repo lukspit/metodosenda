@@ -226,7 +226,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
               {showTenantDropdown && (
                 <div className="absolute right-0 mt-2 w-56 bg-[#1E2538] border border-slate-800 rounded-lg shadow-xl py-1 z-50">
                   <p className="text-[10px] text-slate-450 font-bold tracking-wider uppercase px-3 py-1.5">Mudar Empresa</p>
-                  {tenants.map(t => (
+                  {(tenants || []).map(t => (
                     <button
                       key={t.id}
                       onClick={() => {
@@ -261,7 +261,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                 <p className="text-sm font-semibold text-slate-100">{currentProfile?.name || 'Senda User'}</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-bold border-2 border-[#C5A85A] shadow-sm">
-                {currentProfile?.name?.split(' ').map(n => n[0]).slice(0, 2).join('') || 'U'}
+                {currentProfile?.name ? currentProfile.name.split(' ').map(n => n[0]).slice(0, 2).join('') : 'U'}
               </div>
             </div>
 

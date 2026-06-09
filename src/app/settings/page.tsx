@@ -220,7 +220,7 @@ Agilidade e capricho"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0">
-                        {profile.name?.split(' ').map(n => n[0]).slice(0, 2).join('') || 'U'}
+                        {profile.name ? profile.name.split(' ').map(n => n[0]).slice(0, 2).join('') : 'U'}
                       </div>
                       <div className="min-w-0">
                         <h4 className="font-bold text-xs text-slate-850 truncate">{profile.name}</h4>
