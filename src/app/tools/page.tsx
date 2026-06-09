@@ -17,7 +17,10 @@ import {
   DollarSign,
   TrendingUp,
   Percent,
-  Compass
+  Compass,
+  Trash2,
+  Paperclip,
+  CheckCircle2
 } from 'lucide-react';
 
 // Parser simples de Markdown para HTML premium e seguro
@@ -123,6 +126,11 @@ export default function ToolsPage() {
   const [reviewResult, setReviewResult] = useState<string | null>(null);
   const [loadingReview, setLoadingReview] = useState(false);
 
+  // Estados adicionais do Revisor (Upload de arquivos)
+  const [attachedFileName, setAttachedFileName] = useState('');
+  const [extractingFile, setExtractingFile] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+
   // Estados do Gerador de Minutas
   const [genTemplateType, setGenTemplateType] = useState('Contrato de Prestação de Serviços (PJ)');
   const [genParties, setGenParties] = useState({
@@ -134,7 +142,12 @@ export default function ToolsPage() {
     priceValue: '',
     paymentTerms: '',
     durationMonths: '12',
-    confidentialPurpose: 'Proteção de segredos industriais e know-how de negócios'
+    confidentialPurpose: 'Proteção de segredos industriais e know-how de negócios',
+    // Novos campos jurídicos avançados
+    jurisdictionForo: '',
+    terminationPenalty: '',
+    intellectualProperty: 'Do Contratante',
+    exclusivityTerms: 'Sem Exclusividade'
   });
   const [genResult, setGenResult] = useState<string | null>(null);
   const [loadingGen, setLoadingGen] = useState(false);
@@ -148,13 +161,61 @@ export default function ToolsPage() {
   const [finResultAi, setFinResultAi] = useState<string | null>(null);
   const [loadingFin, setLoadingFin] = useState(false);
 
+  // Seletor de modo do Simulador
+  const [simulMode, setSimulMode] = useState<'simplified' | 'detailed'>('simplified');
+
+  // Custos Fixos Detalhado
+  const [fixedSalaries, setFixedSalaries] = useState<number | ''>('');
+  const [fixedRent, setFixedRent] = useState<number | ''>('');
+  const [fixedSoftware, setFixedSoftware] = useState<number | ''>('');
+  const [fixedOperational, setFixedOperational] = useState<number | ''>('');
+
+  // Margem de Contribuição Detalhada
+  const [unitPrice, setUnitPrice] = useState<number | ''>('');
+  const [taxPercent, setTaxPercent] = useState<number | ''>('');
+  const [commissionPercent, setCommissionPercent] = useState<number | ''>('');
+  const [directUnitCost, setDirectUnitCost] = useState<number | ''>('');
+
+  // Cálculo dinâmico dos Custos Fixos Totais
+  const calculatedFixedCosts = useMemo(() => {
+    if (simulMode === 'simplified') {
+      return finFixedCosts === '' ? 0 : finFixedCosts;
+    }
+    return (
+      (typeof fixedSalaries === 'number' ? fixedSalaries : 0) +
+      (typeof fixedRent === 'number' ? fixedRent : 0) +
+      (typeof fixedSoftware === 'number' ? fixedSoftware : 0) +
+      (typeof fixedOperational === 'number' ? fixedOperational : 0)
+    );
+  }, [simulMode, finFixedCosts, fixedSalaries, fixedRent, fixedSoftware, fixedOperational]);
+
+  // Cálculo dinâmico da Margem de Contribuição %
+  const calculatedContribMargin = useMemo(() => {
+    if (simulMode === 'simplified') {
+      return finContribMargin === '' ? 0 : finContribMargin;
+    }
+    if (typeof unitPrice !== 'number' || unitPrice <= 0) {
+      return 0;
+    }
+    const taxesVal = (typeof taxPercent === 'number' ? taxPercent : 0) / 100 * unitPrice;
+    const commissionsVal = (typeof commissionPercent === 'number' ? commissionPercent : 0) / 100 * unitPrice;
+    const directCostsVal = typeof directUnitCost === 'number' ? directUnitCost : 0;
+    
+    const totalVarCosts = taxesVal + commissionsVal + directCostsVal;
+    const marginAmount = unitPrice - totalVarCosts;
+    return Math.max(0, Math.min(100, Math.round((marginAmount / unitPrice) * 100)));
+  }, [simulMode, finContribMargin, unitPrice, taxPercent, commissionPercent, directUnitCost]);
+
   // Cálculos matemáticos locais do Break-Even
   const calculatedMetrics = useMemo(() => {
-    if (typeof finFixedCosts !== 'number' || typeof finContribMargin !== 'number' || finContribMargin <= 0) {
+    const fixed = calculatedFixedCosts;
+    const margin = calculatedContribMargin;
+    
+    if (fixed <= 0 || margin <= 0) {
       return null;
     }
     
-    const breakEven = Math.round(finFixedCosts / (finContribMargin / 100));
+    const breakEven = Math.round(fixed / (margin / 100));
     let safetyMargin = 0;
     
     if (typeof finRevenue === 'number' && finRevenue > 0) {
@@ -165,7 +226,7 @@ export default function ToolsPage() {
       breakEvenPoint: breakEven,
       marginOfSafety: safetyMargin
     };
-  }, [finFixedCosts, finContribMargin, finRevenue]);
+  }, [calculatedFixedCosts, calculatedContribMargin, finRevenue]);
 
   // Função para executar a chamada de IA genérica
   const callAiTool = async (toolName: string, payloadData: any) => {
@@ -215,6 +276,81 @@ export default function ToolsPage() {
     }
   };
 
+  // Manipulador de upload de arquivo do Revisor
+  const handleReviewFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFileError(null);
+    setAttachedFileName(file.name);
+    setReviewText('');
+
+    // Verificar formato
+    const validExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.txt', '.csv'];
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!validExtensions.includes(fileExt)) {
+      setFileError('Formato de arquivo inválido. Formatos suportados: PDF, PNG, JPG, JPEG, TXT e CSV.');
+      setAttachedFileName('');
+      return;
+    }
+
+    if (fileExt === '.txt' || fileExt === '.csv') {
+      setExtractingFile(true);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        setReviewText(text);
+        setExtractingFile(false);
+      };
+      reader.onerror = () => {
+        setFileError('Erro ao ler o arquivo de texto.');
+        setExtractingFile(false);
+      };
+      reader.readAsText(file);
+    } else {
+      // PDF ou Imagem -> Envia para API de extração via IA
+      setExtractingFile(true);
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64Data = reader.result as string;
+          const response = await fetch('/api/ai/extract-document', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              fileData: base64Data,
+              filename: file.name,
+              mimeType: file.type
+            }),
+          });
+
+          if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || 'Erro na extração de texto por IA.');
+          }
+
+          const result = await response.json();
+          setReviewText(result.text || 'Nenhum texto extraído.');
+        } catch (err: any) {
+          console.error(err);
+          setFileError(err.message || 'Ocorreu um erro ao extrair o texto com IA.');
+          setAttachedFileName('');
+        } finally {
+          setExtractingFile(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveReviewAttachment = () => {
+    setAttachedFileName('');
+    setReviewText('');
+    setFileError(null);
+  };
+
   // Executar Gerador
   const handleRunGenerator = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,19 +377,32 @@ export default function ToolsPage() {
 
   // Executar Análise Financeira com IA
   const handleRunFinancialAnalysis = async () => {
-    if (!calculatedMetrics || typeof finRevenue !== 'number' || typeof finFixedCosts !== 'number' || typeof finContribMargin !== 'number') return;
+    if (!calculatedMetrics || typeof finRevenue !== 'number') return;
 
     setLoadingFin(true);
     setFinResultAi(null);
 
     try {
       const resultText = await callAiTool('financial_analysis', {
-        fixedCosts: finFixedCosts,
-        contributionMargin: finContribMargin,
+        fixedCosts: calculatedFixedCosts,
+        contributionMargin: calculatedContribMargin,
         revenue: finRevenue,
         breakEvenPoint: calculatedMetrics.breakEvenPoint,
         marginOfSafety: calculatedMetrics.marginOfSafety,
         sector: finSector,
+        simulMode: simulMode,
+        fixedCostsDetail: simulMode === 'detailed' ? {
+          salaries: fixedSalaries,
+          rent: fixedRent,
+          software: fixedSoftware,
+          operational: fixedOperational
+        } : null,
+        marginDetail: simulMode === 'detailed' ? {
+          unitPrice,
+          taxPercent,
+          commissionPercent,
+          directUnitCost
+        } : null,
         tenantInfo: {
           name: currentTenant?.name || 'Senda Cliente'
         }
@@ -307,7 +456,7 @@ export default function ToolsPage() {
                 <div>
                   <h3 className="font-extrabold text-slate-800 text-base">Revisor de Documentos</h3>
                   <p className="text-xs text-slate-500 mt-1.5 leading-relaxed font-light">
-                    Cole contratos, NDAs ou propostas e deixe a IA auditar riscos, sugerir correções e emitir pareceres de segurança comercial.
+                    Faça upload ou cole contratos, NDAs ou propostas e deixe a IA auditar riscos, sugerir correções e emitir pareceres estratégicos.
                   </p>
                 </div>
               </div>
@@ -328,7 +477,7 @@ export default function ToolsPage() {
                 <div>
                   <h3 className="font-extrabold text-slate-800 text-base">Gerador de Minutas</h3>
                   <p className="text-xs text-slate-500 mt-1.5 leading-relaxed font-light">
-                    Crie propostas de contratos PJ de prestação de serviços ou termos de confidencialidade customizados para a sua empresa em segundos.
+                    Crie propostas de contratos PJ, freelancers, termos de confidencialidade ou SaaS sob medida em segundos.
                   </p>
                 </div>
               </div>
@@ -349,7 +498,7 @@ export default function ToolsPage() {
                 <div>
                   <h3 className="font-extrabold text-slate-800 text-base">Simulador de Break-Even</h3>
                   <p className="text-xs text-slate-500 mt-1.5 leading-relaxed font-light">
-                    Calcule o ponto de equilíbrio operacional, projete lucros de sua margem e obtenha análises de custos baseadas na sua área.
+                    Simule ponto de equilíbrio operacional, calcule margens passo a passo e receba análises estratégicas para seu setor.
                   </p>
                 </div>
               </div>
@@ -367,7 +516,7 @@ export default function ToolsPage() {
         <div className="space-y-6">
           {/* Botão Voltar */}
           <button 
-            onClick={() => { setActiveTool('selection'); setReviewResult(null); setReviewText(''); }}
+            onClick={() => { setActiveTool('selection'); setReviewResult(null); setReviewText(''); setAttachedFileName(''); setFileError(null); }}
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors font-semibold"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -395,29 +544,90 @@ export default function ToolsPage() {
                   onChange={e => setReviewDocType(e.target.value)}
                   className="w-full bg-slate-50 text-base md:text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
                 >
-                  <option value="Contrato de Prestação de Serviços">Contrato de Prestação de Serviços</option>
+                  <option value="Contrato de Prestação de Serviços">Contrato de Prestação de Serviços (Geral)</option>
                   <option value="Acordo de Confidencialidade (NDA)">Acordo de Confidencialidade (NDA)</option>
                   <option value="Proposta Comercial de Vendas">Proposta Comercial</option>
                   <option value="Contrato de Aluguel ou Locação">Contrato de Locação</option>
+                  <option value="Contrato de Trabalho / Contratação (CLT ou PJ)">Contrato de Trabalho (CLT ou PJ)</option>
+                  <option value="Acordo de Sócios (Vesting / Partnership)">Acordo de Sócios (Vesting/Partnership)</option>
+                  <option value="Termos de Uso e Política de Privacidade">Termos de Uso e Políticas (Plataformas/SaaS)</option>
+                  <option value="Contrato de Compra e Venda de Quotas/Ativos">Contrato de Compra e Venda de Quotas/Ativos</option>
+                  <option value="Acordo de Parceria Comercial (Joint Venture)">Acordo de Parceria Comercial (Joint Venture)</option>
                   <option value="Outro Documento de Gestão">Outro Documento Corporativo</option>
                 </select>
               </div>
 
+              {/* Área de Anexo/Upload */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Importar Arquivo (Opcional)</label>
+                  {attachedFileName && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveReviewAttachment}
+                      className="text-[9px] font-bold text-rose-500 hover:underline flex items-center gap-0.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Remover arquivo
+                    </button>
+                  )}
+                </div>
+
+                {!attachedFileName ? (
+                  <div>
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 hover:border-[#C5A85A] bg-slate-50/20 rounded-lg p-4 cursor-pointer transition-all hover:bg-slate-50">
+                      <div className="flex flex-col items-center justify-center text-center space-y-1">
+                        <Paperclip className="w-4 h-4 text-slate-400" />
+                        <p className="text-[10px] font-bold text-slate-600">Clique para anexar arquivo</p>
+                        <p className="text-[8px] text-slate-405 font-light">PDF, Imagem (PNG/JPG), TXT ou CSV</p>
+                      </div>
+                      <input
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg,.txt,.csv"
+                        className="hidden"
+                        onChange={handleReviewFileUpload}
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 border border-slate-200 rounded-md p-3 flex items-center justify-between gap-3 shadow-inner">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-8 h-8 rounded bg-[#C5A85A]/10 flex items-center justify-center text-[#C5A85A] shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div className="leading-tight min-w-0">
+                        <p className="text-[11px] font-bold text-slate-700 truncate">{attachedFileName}</p>
+                        {extractingFile ? (
+                          <p className="text-[9px] text-[#C5A85A] font-bold animate-pulse flex items-center gap-1 mt-0.5">
+                            <Loader2 className="w-3 h-3 animate-spin" /> IA extraindo texto...
+                          </p>
+                        ) : (
+                          <p className="text-[9px] text-emerald-600 font-bold flex items-center gap-0.5 mt-0.5">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500 inline" /> Texto extraído!
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {fileError && <p className="text-[9px] text-rose-500 font-bold">{fileError}</p>}
+              </div>
+
               <div>
-                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">Texto do Documento *</label>
+                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">Conteúdo do Documento *</label>
                 <textarea
                   required
-                  rows={12}
+                  rows={10}
                   value={reviewText}
+                  disabled={extractingFile}
                   onChange={e => setReviewText(e.target.value)}
-                  placeholder="Cole as cláusulas ou o texto completo do contrato aqui..."
-                  className="w-full bg-slate-50 text-base md:text-xs text-slate-700 border border-slate-200 rounded-md p-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] resize-none"
+                  placeholder="Arraste um documento acima ou digite/cole o texto contratual aqui..."
+                  className="w-full bg-slate-50 text-base md:text-xs text-slate-700 border border-slate-200 rounded-md p-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] resize-none disabled:opacity-50"
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={loadingReview || !reviewText.trim()}
+                disabled={loadingReview || extractingFile || !reviewText.trim()}
                 className="w-full bg-[#1E2538] hover:bg-[#2c3752] text-white disabled:opacity-40 font-bold py-2.5 rounded-md shadow transition-colors flex items-center justify-center gap-1.5 text-xs cursor-pointer"
               >
                 {loadingReview ? (
@@ -457,7 +667,7 @@ export default function ToolsPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-28 text-slate-500 text-center gap-2">
                     <FileText className="w-10 h-10 text-slate-700" />
-                    <p className="text-xs max-w-[240px]">Cole o texto do documento no formulário lateral e envie para análise.</p>
+                    <p className="text-xs max-w-[240px]">Envie um arquivo ou cole o texto no painel lateral para a auditoria.</p>
                   </div>
                 )}
               </div>
@@ -500,8 +710,13 @@ export default function ToolsPage() {
                   className="w-full bg-slate-50 text-base md:text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
                 >
                   <option value="Contrato de Prestação de Serviços (PJ)">Contrato de Prestação de Serviços (PJ)</option>
+                  <option value="Contrato de Trabalho Freelancer (PF)">Contrato de Trabalho Freelancer (PF)</option>
+                  <option value="Contrato de Licenciamento de Software / SaaS">Contrato de Licenciamento de Software / SaaS</option>
+                  <option value="Contrato de Prestação de Serviços de Marketing / Tráfego Pago">Contrato de Serviços de Marketing / Tráfego</option>
                   <option value="Acordo de Confidencialidade (NDA)">Acordo de Confidencialidade (NDA)</option>
+                  <option value="Acordo de Vesting de Participação Societária">Acordo de Vesting Societário</option>
                   <option value="Termo de Parceria e Cooperação Mútua">Termo de Parceria e Cooperação</option>
+                  <option value="Termo de Distrato Contratual">Termo de Distrato Contratual</option>
                 </select>
               </div>
 
@@ -556,7 +771,7 @@ export default function ToolsPage() {
                 </div>
 
                 {/* Campos condicionais baseados no modelo */}
-                {genTemplateType.includes('Serviços') || genTemplateType.includes('Parceria') ? (
+                {!genTemplateType.includes('NDA') && !genTemplateType.includes('Vesting') && !genTemplateType.includes('Distrato') ? (
                   <>
                     <div>
                       <label className="text-[9px] font-bold text-slate-400 block mb-0.5">Descrição do Escopo / Atividades *</label>
@@ -605,7 +820,7 @@ export default function ToolsPage() {
                       />
                     </div>
                   </>
-                ) : (
+                ) : genTemplateType.includes('NDA') ? (
                   <div>
                     <label className="text-[9px] font-bold text-slate-400 block mb-0.5">Objetivo do Compartilhamento de Informações</label>
                     <textarea
@@ -615,7 +830,95 @@ export default function ToolsPage() {
                       className="w-full bg-slate-50 text-base md:text-[11px] text-slate-700 border border-slate-200 rounded p-2 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] resize-none"
                     />
                   </div>
+                ) : genTemplateType.includes('Vesting') ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[9px] font-bold text-slate-400 block mb-0.5">Percentual de Equity Alvo (%)</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: 5%"
+                        value={genParties.priceValue}
+                        onChange={e => setGenParties(prev => ({ ...prev, priceValue: e.target.value }))}
+                        className="w-full bg-slate-50 text-base md:text-[11px] text-slate-700 border border-slate-200 rounded p-2 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold text-slate-400 block mb-0.5">Prazo de Cliff (Meses)</label>
+                      <input
+                        type="number"
+                        placeholder="Ex: 12"
+                        value={genParties.durationMonths}
+                        onChange={e => setGenParties(prev => ({ ...prev, durationMonths: e.target.value }))}
+                        className="w-full bg-slate-50 text-base md:text-[11px] text-slate-700 border border-slate-200 rounded p-2 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 block mb-0.5">Motivo Resumido do Distrato Contratual</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Conclusão amigável dos serviços contratados"
+                      value={genParties.serviceDesc}
+                      onChange={e => setGenParties(prev => ({ ...prev, serviceDesc: e.target.value }))}
+                      className="w-full bg-slate-50 text-base md:text-[11px] text-slate-700 border border-slate-200 rounded p-2 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                    />
+                  </div>
                 )}
+              </div>
+
+              {/* Informações Avançadas */}
+              <div className="border-t border-slate-100 pt-3 space-y-3">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Configurações Avançadas (Opcional)</h4>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 block mb-0.5">Foro de Eleição (Cidade/UF)</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: São Paulo/SP"
+                      value={genParties.jurisdictionForo}
+                      onChange={e => setGenParties(prev => ({ ...prev, jurisdictionForo: e.target.value }))}
+                      className="w-full bg-slate-50 text-base md:text-[11px] text-slate-700 border border-slate-200 rounded p-2 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 block mb-0.5">Multa por Rescisão</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: 3 parcelas mensais"
+                      value={genParties.terminationPenalty}
+                      onChange={e => setGenParties(prev => ({ ...prev, terminationPenalty: e.target.value }))}
+                      className="w-full bg-slate-50 text-base md:text-[11px] text-slate-700 border border-slate-200 rounded p-2 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 block mb-0.5">Propriedade Intelectual</label>
+                    <select
+                      value={genParties.intellectualProperty}
+                      onChange={e => setGenParties(prev => ({ ...prev, intellectualProperty: e.target.value }))}
+                      className="w-full bg-slate-50 text-base md:text-[11px] text-slate-700 border border-slate-200 rounded p-2 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                    >
+                      <option value="Do Contratante">Do Contratante (Sua Empresa)</option>
+                      <option value="Do Contratado">Do Contratado</option>
+                      <option value="Compartilhada">Compartilhada / Licenciamento</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-400 block mb-0.5">Cláusula de Exclusividade</label>
+                    <select
+                      value={genParties.exclusivityTerms}
+                      onChange={e => setGenParties(prev => ({ ...prev, exclusivityTerms: e.target.value }))}
+                      className="w-full bg-slate-50 text-base md:text-[11px] text-slate-700 border border-slate-200 rounded p-2 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                    >
+                      <option value="Sem Exclusividade">Sem Exclusividade Comercial</option>
+                      <option value="Exclusividade do Contratado">Exclusividade do Contratado</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
               <button
@@ -662,7 +965,7 @@ export default function ToolsPage() {
                 {loadingGen ? (
                   <div className="flex flex-col items-center justify-center py-28 gap-3 text-slate-400 flex-1">
                     <Loader2 className="w-8 h-8 text-[#C5A85A] animate-spin" />
-                    <p className="text-xs animate-pulse">Estruturando objeto de contrato e proteções financeiras...</p>
+                    <p className="text-xs animate-pulse">Estruturando objeto de contrato e cláusulas sob medida...</p>
                   </div>
                 ) : genResult ? (
                   <div className="flex-1 max-h-[450px] overflow-y-auto pr-1 bg-[#161B29]/65 p-4 rounded border border-slate-800 text-xs font-mono whitespace-pre-line text-slate-300 leading-relaxed select-all animate-fadeIn">
@@ -691,6 +994,14 @@ export default function ToolsPage() {
               setFinContribMargin(''); 
               setFinRevenue(''); 
               setFinResultAi(null);
+              setFixedSalaries('');
+              setFixedRent('');
+              setFixedSoftware('');
+              setFixedOperational('');
+              setUnitPrice('');
+              setTaxPercent('');
+              setCommissionPercent('');
+              setDirectUnitCost('');
             }}
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors font-semibold"
           >
@@ -712,9 +1023,28 @@ export default function ToolsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Lado Esquerdo: Formulário (5 Colunas) */}
             <div className="lg:col-span-5 bg-white p-6 rounded-xl border border-slate-200/60 shadow-sm space-y-4 text-left">
-              <h3 className="font-extrabold text-slate-855 text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
-                Dados Operacionais da Empresa
-              </h3>
+              
+              {/* Toggle de Modo */}
+              <div className="flex bg-slate-100 p-0.5 rounded-lg mb-2">
+                <button
+                  type="button"
+                  onClick={() => setSimulMode('simplified')}
+                  className={`flex-1 text-center py-1.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                    simulMode === 'simplified' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Modo Simplificado
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSimulMode('detailed')}
+                  className={`flex-1 text-center py-1.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                    simulMode === 'detailed' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Assistente Detalhado
+                </button>
+              </div>
 
               <div className="space-y-3">
                 <div>
@@ -732,43 +1062,166 @@ export default function ToolsPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block mb-1">
-                    Custos Fixos Mensais (R$) *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
-                    <input
-                      type="number"
-                      required
-                      value={finFixedCosts}
-                      onChange={e => setFinFixedCosts(e.target.value === '' ? '' : Number(e.target.value))}
-                      placeholder="Ex: 25000"
-                      className="w-full bg-slate-50 text-base md:text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 pl-9 pr-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
-                    />
-                  </div>
-                  <span className="text-[9px] text-slate-400">Total de salários, aluguel, sistemas, luz, etc.</span>
-                </div>
+                {/* 1. MODO SIMPLIFICADO */}
+                {simulMode === 'simplified' ? (
+                  <>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block mb-1">
+                        Custos Fixos Mensais (R$) *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
+                        <input
+                          type="number"
+                          required
+                          value={finFixedCosts}
+                          onChange={e => setFinFixedCosts(e.target.value === '' ? '' : Number(e.target.value))}
+                          placeholder="Ex: 25000"
+                          className="w-full bg-slate-50 text-base md:text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 pl-9 pr-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                        />
+                      </div>
+                      <span className="text-[9px] text-slate-400">Total de salários, aluguel, sistemas, luz, etc.</span>
+                    </div>
 
-                <div>
-                  <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block mb-1">
-                    Margem de Contribuição Média (%) *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">%</span>
-                    <input
-                      type="number"
-                      required
-                      max="100"
-                      min="1"
-                      value={finContribMargin}
-                      onChange={e => setFinContribMargin(e.target.value === '' ? '' : Number(e.target.value))}
-                      placeholder="Ex: 40"
-                      className="w-full bg-slate-50 text-base md:text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 pl-9 pr-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
-                    />
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block mb-1">
+                        Margem de Contribuição Média (%) *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">%</span>
+                        <input
+                          type="number"
+                          required
+                          max="100"
+                          min="1"
+                          value={finContribMargin}
+                          onChange={e => setFinContribMargin(e.target.value === '' ? '' : Number(e.target.value))}
+                          placeholder="Ex: 40"
+                          className="w-full bg-slate-50 text-base md:text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 pl-9 pr-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                        />
+                      </div>
+                      <span className="text-[9px] text-slate-400">Faturamento menos custos variáveis (impostos, comissão, fornecedor).</span>
+                    </div>
+                  </>
+                ) : (
+                  /* 2. MODO DETALHADO (ASSISTENTE) */
+                  <div className="space-y-4 animate-fadeIn border-t border-slate-100 pt-3">
+                    
+                    {/* Bloco Custos Fixos Detalhados */}
+                    <div className="space-y-2.5 bg-slate-50/65 p-3 rounded-lg border border-slate-200/50">
+                      <h4 className="text-[9px] font-black text-slate-450 uppercase tracking-widest flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-rose-455 rounded-full inline-block"></span>
+                        Custos Fixos Detalhados (Mensal)
+                      </h4>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[9px] text-slate-405 font-bold block mb-0.5">Salários & Pro-Labore</label>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={fixedSalaries}
+                            onChange={e => setFixedSalaries(e.target.value === '' ? '' : Number(e.target.value))}
+                            className="w-full bg-white text-[11px] text-slate-750 border border-slate-200 rounded p-1.5 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] text-slate-405 font-bold block mb-0.5">Aluguel & Contas</label>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={fixedRent}
+                            onChange={e => setFixedRent(e.target.value === '' ? '' : Number(e.target.value))}
+                            className="w-full bg-white text-[11px] text-slate-750 border border-slate-200 rounded p-1.5 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] text-slate-405 font-bold block mb-0.5">Ferramentas & Software</label>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={fixedSoftware}
+                            onChange={e => setFixedSoftware(e.target.value === '' ? '' : Number(e.target.value))}
+                            className="w-full bg-white text-[11px] text-slate-750 border border-slate-200 rounded p-1.5 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] text-slate-405 font-bold block mb-0.5">Outras Despesas</label>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={fixedOperational}
+                            onChange={e => setFixedOperational(e.target.value === '' ? '' : Number(e.target.value))}
+                            className="w-full bg-white text-[11px] text-slate-750 border border-slate-200 rounded p-1.5 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="text-[9px] font-bold text-slate-500 pt-1 border-t border-slate-200/50 flex justify-between">
+                        <span>Custo Fixo Total Calculado:</span>
+                        <span className="text-slate-800">R$ {calculatedFixedCosts.toLocaleString('pt-BR')}</span>
+                      </div>
+                    </div>
+
+                    {/* Bloco Margem de Contribuição Detalhada */}
+                    <div className="space-y-2.5 bg-slate-50/65 p-3 rounded-lg border border-slate-200/50">
+                      <h4 className="text-[9px] font-black text-slate-450 uppercase tracking-widest flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block"></span>
+                        Cálculo de Margem de Contribuição
+                      </h4>
+                      
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-[9px] text-slate-405 font-bold block mb-0.5">Preço Médio de Venda (R$) *</label>
+                          <input
+                            type="number"
+                            placeholder="Ex: 500"
+                            value={unitPrice}
+                            onChange={e => setUnitPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                            className="w-full bg-white text-[11px] text-slate-750 border border-slate-200 rounded p-1.5 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="text-[9px] text-slate-405 font-bold block mb-0.5">Imposto %</label>
+                            <input
+                              type="number"
+                              placeholder="0"
+                              value={taxPercent}
+                              onChange={e => setTaxPercent(e.target.value === '' ? '' : Number(e.target.value))}
+                              className="w-full bg-white text-[11px] text-slate-750 border border-slate-200 rounded p-1.5 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] text-slate-405 font-bold block mb-0.5">Comissão %</label>
+                            <input
+                              type="number"
+                              placeholder="0"
+                              value={commissionPercent}
+                              onChange={e => setCommissionPercent(e.target.value === '' ? '' : Number(e.target.value))}
+                              className="w-full bg-white text-[11px] text-slate-750 border border-slate-200 rounded p-1.5 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] text-slate-405 font-bold block mb-0.5">Custo Direto R$</label>
+                            <input
+                              type="number"
+                              placeholder="0"
+                              value={directUnitCost}
+                              onChange={e => setDirectUnitCost(e.target.value === '' ? '' : Number(e.target.value))}
+                              className="w-full bg-white text-[11px] text-slate-750 border border-slate-200 rounded p-1.5 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-[9px] font-bold text-slate-500 pt-1 border-t border-slate-200/50 flex justify-between">
+                        <span>Margem de Contribuição %:</span>
+                        <span className="text-slate-800">{calculatedContribMargin}%</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-[9px] text-slate-400">Faturamento menos custos variáveis (impostos, comissão, fornecedor).</span>
-                </div>
+                )}
 
                 <div>
                   <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block mb-1">
@@ -794,7 +1247,7 @@ export default function ToolsPage() {
               
               {/* Painel de Indicadores Calculados */}
               <div className="bg-white p-6 rounded-xl border border-slate-200/60 shadow-sm text-left animate-fadeIn">
-                <h3 className="font-extrabold text-slate-850 text-xs uppercase tracking-wider border-b border-slate-100 pb-2 mb-4">
+                <h3 className="font-extrabold text-slate-855 text-xs uppercase tracking-wider border-b border-slate-100 pb-2 mb-4">
                   Indicadores de Equilíbrio
                 </h3>
 
@@ -805,7 +1258,7 @@ export default function ToolsPage() {
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-between">
                       <div>
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Faturamento Mínimo (Break-Even)</span>
-                        <span className="text-base font-black text-slate-800">
+                        <span className="text-base font-black text-slate-850">
                           R$ {calculatedMetrics.breakEvenPoint.toLocaleString('pt-BR')}
                         </span>
                       </div>
@@ -854,7 +1307,7 @@ export default function ToolsPage() {
                   </div>
                 ) : (
                   <div className="py-6 text-center text-xs text-slate-450 italic">
-                    Insira os Custos Fixos e a Margem de Contribuição ao lado para iniciar a simulação.
+                    Preencha os Custos e a Margem ao lado para iniciar a simulação.
                   </div>
                 )}
 
@@ -896,7 +1349,7 @@ export default function ToolsPage() {
                     {loadingFin ? (
                       <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-400">
                         <Loader2 className="w-6 h-6 text-[#C5A85A] animate-spin" />
-                        <p className="text-xs animate-pulse">Avaliando liquidez e estruturando despesas do setor...</p>
+                        <p className="text-xs animate-pulse">Avaliando estrutura de gastos e precificação...</p>
                       </div>
                     ) : (
                       <div 

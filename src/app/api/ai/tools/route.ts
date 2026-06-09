@@ -54,36 +54,72 @@ Instruções Importantes de Formatação e Estilo:
 3. Use linguagem jurídica extremamente técnica, clara, formal e profissional (língua portuguesa formal do Brasil).
 4. Organize em cláusulas estruturadas com títulos H3 (### Cláusula Primeira - Objeto, ### Cláusula Segunda - Preço e Condições, etc.).
 5. Deixe campos dinâmicos preenchidos com os dados fornecidos ou indicados por colchetes [como dados de testemunhas, etc.].
+6. Você DEVE incluir cláusulas dedicadas e personalizadas caso os seguintes parâmetros opcionais sejam informados nos "Dados para inserção" abaixo:
+   - "jurisdictionForo" (Foro de Eleição para resolução de disputas judiciais).
+   - "terminationPenalty" (Penalidade/multa por rescisão contratual imotivada ou quebra de deveres).
+   - "intellectualProperty" (Propriedade intelectual de entregáveis: se do Contratante, Contratado ou Compartilhada).
+   - "exclusivityTerms" (Exclusividade comercial durante a prestação).
 
 Dados para inserção:
 ${JSON.stringify(partiesInfo || {})}`;
 
-      userMessage = `Gere o contrato de "${templateType}" profissional e completo de acordo com os dados passados.`;
+      userMessage = `Gere a minuta de "${templateType}" completa e profissional de acordo com as especificações e dados passados.`;
 
     } else if (tool === 'financial_analysis') {
-      const { fixedCosts, contributionMargin, revenue, breakEvenPoint, marginOfSafety, sector, tenantInfo } = payload;
+      const { 
+        fixedCosts, 
+        contributionMargin, 
+        revenue, 
+        breakEvenPoint, 
+        marginOfSafety, 
+        sector, 
+        simulMode,
+        fixedCostsDetail,
+        marginDetail,
+        tenantInfo 
+      } = payload;
+      
       const companyName = tenantInfo?.name || 'empresa';
 
-      systemPrompt = `Você é o consultor de finanças corporativas sênior da Senda Consultoria.
-Sua tarefa é analisar os resultados obtidos do cálculo do Ponto de Equilíbrio (Break-Even) da empresa "${companyName}" (setor: ${sector}) e emitir um parecer consultivo estratégico.
+      let detailsContext = '';
+      if (simulMode === 'detailed') {
+        detailsContext = `
+Detalhamento de Custos Fixos Cadastrados pelo Usuário:
+- Salários & Pró-labore: R$ ${fixedCostsDetail?.salaries || 0}
+- Aluguel & Contas fixas: R$ ${fixedCostsDetail?.rent || 0}
+- Licenças & Softwares: R$ ${fixedCostsDetail?.software || 0}
+- Outras despesas de operação: R$ ${fixedCostsDetail?.operational || 0}
 
-Dados Financeiros Fornecidos:
-- Custos Fixos Mensais: R$ ${fixedCosts.toLocaleString('pt-BR')}
+Detalhamento da Margem de Contribuição Calculada:
+- Preço Médio cobrado: R$ ${marginDetail?.unitPrice || 0}
+- Imposto sobre vendas: ${marginDetail?.taxPercent || 0}%
+- Comissões sobre vendas: ${marginDetail?.commissionPercent || 0}%
+- Custos Diretos Unitários de Entrega/CMV: R$ ${marginDetail?.directUnitCost || 0}
+`;
+      }
+
+      systemPrompt = `Você é o consultor de finanças corporativas sênior da Senda Consultoria.
+Sua tarefa é analisar os resultados obtidos do cálculo do Ponto de Equilíbrio (Break-Even) da empresa "${companyName}" (setor: ${sector}) e emitir um parecer consultivo estratégico detalhado.
+
+Dados Financeiros Gerais Fornecidos:
+- Custos Fixos Mensais Totais: R$ ${fixedCosts.toLocaleString('pt-BR')}
 - Margem de Contribuição Média: ${contributionMargin}%
 - Faturamento Mensal Atual: R$ ${revenue.toLocaleString('pt-BR')}
 - Ponto de Equilíbrio (Break-Even): R$ ${breakEvenPoint.toLocaleString('pt-BR')}
 - Margem de Segurança: ${marginOfSafety}% (${marginOfSafety >= 20 ? 'Excelente' : marginOfSafety > 0 ? 'Atenção / Apertada' : 'Crítica / Operando em Prejuízo'})
+${detailsContext}
 
 Instruções Importantes de Formatação e Estilo:
 1. Comece DIRETAMENTE com o parecer. É PROIBIDO qualquer introdução, saudação inicial ou despedida formal.
-2. Seja prático, direto e com foco em finanças corporativas reais.
-3. Formate usando Markdown com a seguinte estrutura:
-   - ## Análise de Saúde Financeira (Exposição sucinta se a empresa está segura ou no limite).
-   - ## 3 Recomendações de Ação Imediata (Ações práticas para otimizar os custos fixos ou expandir a margem de contribuição com foco no setor de ${sector}).
+2. Seja prático, direto e com foco em finanças corporativas reais. 
+3. Se o preenchimento detalhado foi fornecido, comente especificamente sobre a proporção dos custos fixos (ex: se salários/pró-labore representam um peso excessivo na operação) ou sobre a composição da margem de contribuição (se está sofrendo pressão por tributos altos ou CMV elevado) e ofereça soluções de ganho de margem.
+4. Formate usando Markdown com a seguinte estrutura:
+   - ## Análise de Saúde Financeira (Exposição do status operacional, segurança de caixa e do faturamento atual contra o ponto de equilíbrio).
+   - ## 3 Recomendações de Ação Imediata (Ações específicas e práticas de precificação, controle de gastos fixos ou táticas comerciais para o setor de ${sector}).
    - Use listas de marcadores para as recomendações.
    - Use negrito (**destaque**) de forma útil.`;
 
-      userMessage = `Gere o parecer de saúde financeira e recomendações estratégicas com base nos números fornecidos.`;
+      userMessage = `Gere o parecer de saúde financeira e recomendações estratégicas com base nos números e desdobramentos fornecidos.`;
     } else {
       return NextResponse.json({ error: 'Ferramenta utilitária inválida.' }, { status: 400 });
     }
