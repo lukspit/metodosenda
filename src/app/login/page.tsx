@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
-import { Compass, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +21,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -41,88 +42,118 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-lg shadow-xl p-8 space-y-6">
+    <div className="min-h-screen bg-[#EEF2F6] flex flex-col md:flex-row font-sans overflow-hidden">
+      
+      {/* Coluna da Esquerda: Área de Login */}
+      <div className="w-full md:w-[42%] lg:w-[36%] flex items-center justify-center p-6 md:p-12 z-20 relative bg-[#EEF2F6]">
         
-        {/* Logo & Cabeçalho */}
-        <div className="flex flex-col items-center text-center space-y-3">
-          <div className="w-12 h-12 rounded-lg bg-[#1E2538] flex items-center justify-center shadow-md">
-            <img src="/logo.png" className="w-8 h-8 object-contain" alt="Logo Senda" />
+        {/* Card de Login que "invade" a imagem à direita no desktop */}
+        <div className="w-full max-w-md bg-white border border-slate-200/50 rounded-xl shadow-2xl p-8 space-y-6 md:translate-x-12 lg:translate-x-20 transition-all duration-300 relative hover:shadow-slate-350/30">
+          
+          {/* Logo transparente */}
+          <div className="flex flex-col items-center text-center space-y-2 mb-4">
+            <img src="/logo_transparent.png" className="w-44 h-auto object-contain" alt="Senda Consultoria Estratégica" />
           </div>
-          <div>
-            <h2 className="text-xl font-black text-slate-800 tracking-tight">MÉTODO SENDA</h2>
-            <p className="text-xs text-slate-400 font-semibold uppercase tracking-widest mt-0.5">Senda Core v2.0</p>
-          </div>
-        </div>
 
-        {/* Mensagem de Erro */}
-        {error && (
-          <div className="bg-rose-50 border border-rose-250 text-rose-600 px-4 py-3 rounded-md flex items-center gap-2 text-xs font-semibold">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Formulário */}
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Endereço de E-mail</label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                <Mail className="w-4 h-4" />
-              </span>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="nome@empresa.com"
-                disabled={loading}
-                className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 pl-10 pr-4 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
-              />
+          {/* Mensagem de Erro */}
+          {error && (
+            <div className="bg-rose-50 border border-rose-250 text-rose-600 px-4 py-3 rounded-md flex items-center gap-2 text-xs font-semibold animate-fadeIn">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
             </div>
-          </div>
+          )}
 
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Senha de Acesso</label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                <Lock className="w-4 h-4" />
-              </span>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                disabled={loading}
-                className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 pl-10 pr-4 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
-              />
+          {/* Formulário */}
+          <form onSubmit={handleLogin} className="space-y-4 text-left">
+            <div>
+              <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">Email</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <Mail className="w-4 h-4" />
+                </span>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="seuemail@empresa.com"
+                  disabled={loading}
+                  className="w-full bg-slate-50 text-xs text-slate-705 border border-slate-200 rounded-md py-2.5 pl-10 pr-4 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A]"
+                />
+              </div>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading || !email.trim() || !password}
-            className="w-full bg-[#1E2538] hover:bg-[#2c3752] text-white disabled:opacity-40 font-semibold py-2.5 rounded-md shadow transition-all duration-200 flex items-center justify-center gap-2 text-xs"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-[#C5A85A]" />
-                Autenticando...
-              </>
-            ) : (
-              'Entrar na Plataforma'
-            )}
-          </button>
-        </form>
+            <div>
+              <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">Senha</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <Lock className="w-4 h-4" />
+                </span>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  disabled={loading}
+                  className="w-full bg-slate-50 text-xs text-slate-705 border border-slate-200 rounded-md py-2.5 pl-10 pr-4 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A]"
+                />
+              </div>
+            </div>
 
-        {/* Rodapé informativo */}
-        <div className="text-center pt-4 border-t border-slate-100 text-[10px] text-slate-450 leading-relaxed">
-          <p>Seus dados de acesso são gerenciados pela consultoria.</p>
-          <p>Caso tenha esquecido sua senha, solicite um reset ao administrador.</p>
+            {/* Checkbox "Me lembre" & Link "Esqueci minha senha" */}
+            <div className="flex items-center justify-between text-[11px] text-slate-500 font-semibold pt-1">
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="w-3.5 h-3.5 border-slate-250 rounded text-[#C5A85A] focus:ring-[#C5A85A] focus:ring-offset-0 focus:outline-none accent-[#C5A85A]"
+                />
+                Me lembre
+              </label>
+              <a 
+                href="#" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  alert('Para redefinir sua senha, por favor entre em contato com o administrador da consultoria.');
+                }}
+                className="hover:text-[#C5A85A] transition-colors"
+              >
+                Esqueci minha senha
+              </a>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !email.trim() || !password}
+              className="w-full bg-[#1E2538] hover:bg-[#2c3752] text-white disabled:opacity-40 font-bold py-2.5 rounded-md shadow transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-[#C5A85A]" />
+                  Entrando...
+                </>
+              ) : (
+                'Entrar'
+              )}
+            </button>
+          </form>
+
         </div>
+      </div>
 
+      {/* Coluna da Direita: Imagem de fundo com frase de Vicente Falconi */}
+      <div className="hidden md:block md:w-[58%] lg:w-[64%] relative z-10">
+        <div 
+          className="absolute inset-0 bg-cover"
+          style={{ 
+            backgroundImage: `url('/login_bg.jpg')`,
+            backgroundPosition: 'center bottom'
+          }}
+        />
+        {/* Efeito degradê suave para integrar a imagem com o fundo da esquerda */}
+        <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[#EEF2F6] to-transparent pointer-events-none" />
       </div>
     </div>
   );
