@@ -26,16 +26,31 @@ export const SmartInput: React.FC<SmartInputProps> = ({
   
   const recognitionRef = useRef<any>(null);
 
-  // Inicializar o reconhecimento de voz do navegador (Web Speech API)
+  // Limpar microfone no desmontar do componente
   useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+    };
+  }, []);
+
+  const startListening = () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-    if (SpeechRecognition) {
+    if (!SpeechRecognition) {
+      setError('Reconhecimento de voz não suportado neste navegador.');
+      return;
+    }
+
+    try {
       const rec = new SpeechRecognition();
-      rec.continuous = false; // Parar automaticamente quando o usuário terminar de falar
+      rec.continuous = false;
       rec.interimResults = false;
-      rec.lang = 'pt-BR'; // Português do Brasil
+      rec.lang = 'pt-BR';
 
       rec.onstart = () => {
         setIsListening(true);
@@ -51,6 +66,9 @@ export const SmartInput: React.FC<SmartInputProps> = ({
         console.error('Erro no reconhecimento de voz:', event.error);
         if (event.error === 'not-allowed') {
           setError('Permissão de microfone negada. Ative nas configurações do navegador.');
+        } else if (event.error === 'no-speech') {
+          // Captura caso o usuário não fale nada de imediato (silêncio)
+          setError('Nenhuma fala detectada. Clique no microfone e tente falar novamente.');
         } else {
           setError('Não consegui te ouvir direito. Tente novamente.');
         }
@@ -59,23 +77,33 @@ export const SmartInput: React.FC<SmartInputProps> = ({
 
       rec.onend = () => {
         setIsListening(false);
+        recognitionRef.current = null;
       };
 
       recognitionRef.current = rec;
+      rec.start();
+    } catch (err: any) {
+      console.error('Erro ao iniciar reconhecimento de voz:', err);
+      setError('Erro ao iniciar o microfone. Tente novamente.');
+      setIsListening(false);
     }
-  }, []);
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  };
 
   const toggleListening = () => {
-    if (!recognitionRef.current) {
-      setError('Reconhecimento de voz não suportado neste navegador.');
-      return;
-    }
-
     if (isListening) {
-      recognitionRef.current.stop();
+      stopListening();
     } else {
-      setError(null);
-      recognitionRef.current.start();
+      startListening();
     }
   };
 
