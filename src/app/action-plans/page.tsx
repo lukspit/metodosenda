@@ -261,10 +261,10 @@ export default function ActionPlansPage() {
             return (
               <div 
                 key={plan.id}
-                className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-all duration-200 relative group"
+                className="bg-white rounded-lg p-4 md:p-6 border border-slate-200/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-all duration-200 relative group"
               >
                 {/* Botões Rápidos de Editar/Excluir */}
-                <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 p-1 rounded border border-slate-100 shadow-sm">
+                <div className="absolute top-4 right-4 flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-white/90 p-1 rounded border border-slate-100 shadow-sm">
                   <button
                     onClick={() => handleEditClick(plan)}
                     className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
@@ -369,7 +369,7 @@ export default function ActionPlansPage() {
       {/* Modal de Criação / Edição de Plano de Ação */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
-          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
             
             <div className="flex items-center justify-between px-6 py-4 bg-[#1E2538] text-white rounded-t-lg">
               <div className="flex items-center gap-2">

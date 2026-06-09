@@ -30,6 +30,8 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   const [showCulture, setShowCulture] = useState(false);
   const [showTenantDropdown, setShowTenantDropdown] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+
 
   if (pathname === '/login') {
     return <>{children}</>;
@@ -65,8 +67,8 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   return (
     <div className="flex h-screen bg-white overflow-hidden font-sans transition-colors duration-300">
       
-      {/* 1. Sidebar Lateral */}
-      <aside className={`bg-[#1E2538] text-slate-300 flex flex-col justify-between shrink-0 shadow-xl border-r border-slate-800 transition-all duration-300 ${
+      {/* 1. Sidebar Lateral (Apenas Desktop) */}
+      <aside className={`hidden md:flex bg-[#1E2538] text-slate-300 flex-col justify-between shrink-0 shadow-xl border-r border-slate-800 transition-all duration-300 ${
         isSidebarOpen ? 'w-[260px]' : 'w-[75px]'
       }`}>
         <div>
@@ -87,7 +89,6 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             )}
           </div>
 
-
           {/* Menu Principal */}
           <nav className="mt-6 px-3 space-y-1">
             <p className={`text-[10px] font-bold text-slate-500 tracking-widest uppercase px-3 mb-2 ${
@@ -100,16 +101,16 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
               const isActive = pathname === item.path;
               return (
                 <Link
-                  key={item.path}
-                  href={item.path}
-                  title={!isSidebarOpen ? item.name : undefined}
-                  className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group ${
-                    isSidebarOpen ? 'gap-3 px-3 py-2.5 justify-start' : 'p-3 justify-center'
-                  } ${
-                    isActive 
-                      ? 'bg-gradient-to-r from-[#C5A85A]/20 to-[#C5A85A]/5 text-[#C5A85A] border-l-4 border-[#C5A85A]' 
-                      : 'hover:bg-slate-800 hover:text-white'
-                  }`}
+                   key={item.path}
+                   href={item.path}
+                   title={!isSidebarOpen ? item.name : undefined}
+                   className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group ${
+                     isSidebarOpen ? 'gap-3 px-3 py-2.5 justify-start' : 'p-3 justify-center'
+                   } ${
+                     isActive 
+                       ? 'bg-gradient-to-r from-[#C5A85A]/20 to-[#C5A85A]/5 text-[#C5A85A] border-l-4 border-[#C5A85A]' 
+                       : 'hover:bg-slate-800 hover:text-white'
+                   }`}
                 >
                   <Icon className={`w-5 h-5 transition-transform duration-200 group-hover:scale-110 ${
                     isActive ? 'text-[#C5A85A]' : 'text-slate-400 group-hover:text-slate-200'
@@ -129,16 +130,16 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
               const isActive = pathname === item.path;
               return (
                 <Link
-                  key={item.path}
-                  href={item.path}
-                  title={!isSidebarOpen ? item.name : undefined}
-                  className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group ${
-                    isSidebarOpen ? 'gap-3 px-3 py-2.5 justify-start' : 'p-3 justify-center'
-                  } ${
-                    isActive 
-                      ? 'bg-gradient-to-r from-[#C5A85A]/20 to-[#C5A85A]/5 text-[#C5A85A] border-l-4 border-[#C5A85A]' 
-                      : 'hover:bg-slate-800 hover:text-white'
-                  }`}
+                   key={item.path}
+                   href={item.path}
+                   title={!isSidebarOpen ? item.name : undefined}
+                   className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group ${
+                     isSidebarOpen ? 'gap-3 px-3 py-2.5 justify-start' : 'p-3 justify-center'
+                   } ${
+                     isActive 
+                       ? 'bg-gradient-to-r from-[#C5A85A]/20 to-[#C5A85A]/5 text-[#C5A85A] border-l-4 border-[#C5A85A]' 
+                       : 'hover:bg-slate-800 hover:text-white'
+                   }`}
                 >
                   <Icon className={`w-5 h-5 transition-transform duration-200 group-hover:scale-110 ${
                     isActive ? 'text-[#C5A85A]' : 'text-slate-400 group-hover:text-slate-200'
@@ -177,28 +178,27 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
         </div>
       </aside>
 
-
       {/* 2. Área do Conteúdo Principal */}
       <div className="flex-1 flex flex-col overflow-hidden">
         
         {/* Cabeçalho Superior (Header) */}
-        <header className="h-16 bg-[#1E2538] text-slate-300 border-b border-slate-800 flex items-center justify-between px-6 z-10 shadow-sm shrink-0">
+        <header className="h-16 bg-[#1E2538] text-slate-300 border-b border-slate-800 flex items-center justify-between px-4 md:px-6 z-10 shadow-sm shrink-0">
           
           <div className="flex items-center gap-4">
-            {/* Hambúrguer sidebar */}
+            {/* Hambúrguer sidebar (Apenas Desktop) */}
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 transition-all active:scale-95"
+              className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 transition-all active:scale-95 hidden md:block"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
-            {/* Cultura Organizacional retrátil */}
+            {/* Cultura Organizacional retrátil (Apenas Desktop) */}
             <button
               onClick={() => setShowCulture(!showCulture)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+              className={`items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border hidden md:flex ${
                 showCulture 
                   ? 'bg-[#C5A85A] border-[#C5A85A] text-[#1E2538] shadow-md' 
                   : 'bg-[#C5A85A]/10 border-[#C5A85A]/20 text-[#C5A85A] hover:bg-[#C5A85A]/20'
@@ -208,12 +208,22 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
               Cultura Organizacional
               {showCulture ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
+
+            {/* Logo Senda Simplificado (Apenas Mobile) */}
+            <div className="flex items-center gap-2 md:hidden">
+              <img 
+                src="/logo_transparent.png" 
+                className="h-6 w-auto object-contain" 
+                alt="Logo Senda" 
+              />
+              <span className="font-extrabold text-white text-sm tracking-wider">MÉTODO <span className="text-[#C5A85A] text-[10px] font-semibold tracking-widest uppercase">Senda</span></span>
+            </div>
           </div>
 
           <div className="flex items-center gap-6">
             
-            {/* Seletor de Tenant */}
-            <div className="relative">
+            {/* Seletor de Tenant (Apenas Desktop) */}
+            <div className="relative hidden md:block">
               {tenants && tenants.length > 1 ? (
                 <button
                   onClick={() => setShowTenantDropdown(!showTenantDropdown)}
@@ -252,7 +262,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
               )}
             </div>
 
-            {/* Tela cheia */}
+            {/* Tela cheia (Apenas Desktop/Tablet) */}
             <button 
               onClick={toggleFullscreen}
               className="text-slate-400 hover:text-slate-200 transition-colors hidden sm:block"
@@ -262,7 +272,14 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             </button>
 
             {/* Usuário Logado */}
-            <div className="flex items-center gap-3 border-l border-slate-800 pl-4">
+            <div 
+              onClick={() => {
+                if (window.innerWidth < 768) {
+                  setShowMoreMenu(true);
+                }
+              }}
+              className="flex items-center gap-3 md:border-l border-slate-800 md:pl-4 cursor-pointer md:cursor-default"
+            >
               <div className="text-right hidden md:block">
                 <p className="text-xs text-slate-500">Consultor Ativo</p>
                 <p className="text-sm font-semibold text-slate-100">{currentProfile?.name || 'Senda User'}</p>
@@ -275,9 +292,9 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           </div>
         </header>
 
-        {/* 3. Painel Expansível de Cultura */}
+        {/* 3. Painel Expansível de Cultura (Apenas Desktop) */}
         {showCulture && currentTenant && (
-          <div className="bg-[#1E2538] text-white border-b border-slate-800 px-8 py-6 z-20 shadow-inner grid grid-cols-1 md:grid-cols-4 gap-6 animate-fadeIn transition-all duration-300">
+          <div className="hidden md:grid bg-[#1E2538] text-white border-b border-slate-800 px-8 py-6 z-20 shadow-inner grid-cols-1 md:grid-cols-4 gap-6 animate-fadeIn transition-all duration-300">
             <div className="bg-slate-800/40 rounded-md p-4 border border-slate-700/50">
               <h4 className="text-xs font-bold text-[#C5A85A] uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <Compass className="w-4 h-4" /> Missão
@@ -313,14 +330,226 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           </div>
         )}
 
-        {/* 4. Corpo da Página com Rolagem */}
-        <main className="flex-1 overflow-y-auto p-8 relative">
-          <div className="max-w-7xl mx-auto space-y-8">
+        {/* 4. Corpo da Página com Rolagem Responsiva */}
+        <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-8 relative">
+          <div className="max-w-7xl mx-auto space-y-4 md:space-y-8">
             {children}
           </div>
         </main>
 
       </div>
+
+      {/* 5. Bottom Navigation Bar (Apenas Mobile) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#1E2538] border-t border-slate-800 flex items-center justify-around px-2 z-30 shadow-2xl backdrop-blur-md bg-opacity-95 pb-safe">
+        {/* Dashboard */}
+        <Link 
+          href="/dashboard"
+          onClick={() => setShowMoreMenu(false)}
+          className={`flex flex-col items-center justify-center w-16 h-12 rounded-lg transition-colors ${
+            pathname === '/dashboard' ? 'text-[#C5A85A]' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Home className="w-5 h-5" />
+          <span className="text-[10px] mt-1">Painel</span>
+        </Link>
+
+        {/* Indicadores */}
+        <Link 
+          href="/indicators"
+          onClick={() => setShowMoreMenu(false)}
+          className={`flex flex-col items-center justify-center w-16 h-12 rounded-lg transition-colors ${
+            pathname === '/indicators' ? 'text-[#C5A85A]' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <BarChart3 className="w-5 h-5" />
+          <span className="text-[10px] mt-1">Metas</span>
+        </Link>
+
+        {/* Planos de Ação */}
+        <Link 
+          href="/action-plans"
+          onClick={() => setShowMoreMenu(false)}
+          className={`flex flex-col items-center justify-center w-16 h-12 rounded-lg transition-colors ${
+            pathname === '/action-plans' ? 'text-[#C5A85A]' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Target className="w-5 h-5" />
+          <span className="text-[10px] mt-1">Ações</span>
+        </Link>
+
+        {/* Agenda */}
+        <Link 
+          href="/calendar"
+          onClick={() => setShowMoreMenu(false)}
+          className={`flex flex-col items-center justify-center w-16 h-12 rounded-lg transition-colors ${
+            pathname === '/calendar' ? 'text-[#C5A85A]' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Calendar className="w-5 h-5" />
+          <span className="text-[10px] mt-1">Agenda</span>
+        </Link>
+
+        {/* Botão Mais */}
+        <button 
+          onClick={() => setShowMoreMenu(!showMoreMenu)}
+          className={`flex flex-col items-center justify-center w-16 h-12 rounded-lg transition-colors ${
+            showMoreMenu ? 'text-[#C5A85A]' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <div className="flex gap-1 justify-center items-center h-5">
+            <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+          </div>
+          <span className="text-[10px] mt-1">Mais</span>
+        </button>
+      </div>
+
+      {/* 6. Bottom Sheet Menu "Mais" (Apenas Mobile) */}
+      {showMoreMenu && (
+        <div className="md:hidden fixed inset-0 z-45 flex flex-col justify-end">
+          {/* Overlay escuro de fundo com fade-in */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fadeIn"
+            onClick={() => setShowMoreMenu(false)}
+          />
+          
+          {/* Menu Deslizante com slide-up */}
+          <div className="relative bg-[#1E2538] border-t border-slate-800 rounded-t-2xl p-6 space-y-6 max-h-[85vh] overflow-y-auto z-50 animate-slideUp shadow-2xl pb-10">
+            {/* Barra superior de arraste / feedback visual */}
+            <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto -mt-2 mb-4 cursor-pointer" onClick={() => setShowMoreMenu(false)} />
+
+            {/* Perfil do Usuário */}
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+              <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-bold border-2 border-[#C5A85A] shadow-sm">
+                {currentProfile?.name ? currentProfile.name.split(' ').map(n => n[0]).slice(0, 2).join('') : 'U'}
+              </div>
+              <div>
+                <p className="text-xs text-[#C5A85A] font-semibold uppercase tracking-wider">Consultor Ativo</p>
+                <p className="text-base font-bold text-slate-100">{currentProfile?.name || 'Senda User'}</p>
+              </div>
+            </div>
+
+            {/* Menus Secundários */}
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                href="/organizational-chart"
+                onClick={() => setShowMoreMenu(false)}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
+                  pathname === '/organizational-chart' 
+                    ? 'border-[#C5A85A] text-[#C5A85A] bg-[#C5A85A]/5' 
+                    : 'border-slate-800 text-slate-300 bg-[#161B29]/50 hover:bg-slate-800'
+                }`}
+              >
+                <GitBranch className="w-6 h-6 mb-1.5" />
+                <span className="text-xs text-center font-medium">Organograma</span>
+              </Link>
+
+              <Link
+                href="/minutes"
+                onClick={() => setShowMoreMenu(false)}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
+                  pathname === '/minutes' 
+                    ? 'border-[#C5A85A] text-[#C5A85A] bg-[#C5A85A]/5' 
+                    : 'border-slate-800 text-slate-300 bg-[#161B29]/50 hover:bg-slate-800'
+                }`}
+              >
+                <FileText className="w-6 h-6 mb-1.5" />
+                <span className="text-xs text-center font-medium">Atas</span>
+              </Link>
+            </div>
+
+            {/* Seletor de Tenant no Mobile */}
+            {tenants && tenants.length > 0 && (
+              <div className="bg-[#161B29]/40 border border-slate-800/80 rounded-xl p-4 space-y-3">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-[#C5A85A]" /> Empresa / Contexto
+                </h4>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                  {tenants.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setCurrentTenant(t);
+                        setShowMoreMenu(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                        currentTenant?.id === t.id 
+                          ? 'text-[#C5A85A] font-semibold bg-[#C5A85A]/10 border border-[#C5A85A]/30' 
+                          : 'text-slate-300 hover:bg-slate-800 border border-transparent'
+                      }`}
+                    >
+                      <span className="truncate">{t.name}</span>
+                      {currentTenant?.id === t.id && <div className="w-1.5 h-1.5 rounded-full bg-[#C5A85A]" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Cultura Organizacional colapsável no Mobile */}
+            {currentTenant && (
+              <div className="bg-[#161B29]/40 border border-slate-800/80 rounded-xl p-4">
+                <details className="group">
+                  <summary className="list-none flex items-center justify-between cursor-pointer select-none">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Compass className="w-4 h-4 text-[#C5A85A]" /> Cultura Organizacional
+                    </h4>
+                    <ChevronDown className="w-4 h-4 text-slate-400 transition-transform duration-200 group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-4 grid grid-cols-1 gap-3.5 text-xs border-t border-slate-800/60 pt-3 animate-fadeIn">
+                    <div>
+                      <span className="font-bold text-[#C5A85A] block mb-1">Missão</span>
+                      <p className="text-slate-300 leading-relaxed font-light">{currentTenant.mission || 'Não cadastrado'}</p>
+                    </div>
+                    <div>
+                      <span className="font-bold text-[#C5A85A] block mb-1">Negócio</span>
+                      <p className="text-slate-300 leading-relaxed font-light">{currentTenant.vision || 'Não cadastrado'}</p>
+                    </div>
+                    <div>
+                      <span className="font-bold text-[#C5A85A] block mb-1">Valores</span>
+                      <p className="text-slate-300 leading-relaxed font-light whitespace-pre-line">{currentTenant.values || 'Não cadastrado'}</p>
+                    </div>
+                    <div>
+                      <span className="font-bold text-[#C5A85A] block mb-1">Propósito</span>
+                      <p className="text-slate-300 leading-relaxed font-light">{currentTenant.purpose || 'Não cadastrado'}</p>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            )}
+
+            {/* Ações Administrativas e Logout */}
+            <div className="border-t border-slate-800 pt-4 space-y-2.5">
+              <Link
+                href="/settings"
+                onClick={() => setShowMoreMenu(false)}
+                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium border transition-colors ${
+                  pathname === '/settings' 
+                    ? 'border-[#C5A85A]/30 text-[#C5A85A] bg-[#C5A85A]/5' 
+                    : 'border-slate-800 text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <Settings className="w-5 h-5 text-slate-400" />
+                Configurações da Plataforma
+              </Link>
+
+              <button
+                onClick={() => {
+                  setShowMoreMenu(false);
+                  handleLogout();
+                }}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold border border-rose-500/20 text-rose-450 bg-rose-500/5 hover:bg-rose-500/10 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-5 h-5 text-rose-500" />
+                Sair da Conta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
+

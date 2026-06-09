@@ -48,7 +48,7 @@ export default function LoginPage() {
       <div className="w-full md:w-[42%] lg:w-[36%] flex items-center justify-center p-6 md:p-12 z-20 relative bg-[#EEF2F6]">
         
         {/* Card de Login que "invade" a imagem à direita no desktop */}
-        <div className="w-full max-w-md bg-white border border-slate-200/50 rounded-xl shadow-2xl p-8 space-y-6 md:translate-x-12 lg:translate-x-20 transition-all duration-300 relative hover:shadow-slate-350/30">
+        <div className="w-full max-w-md bg-white border border-slate-200/50 rounded-xl shadow-2xl p-6 md:p-8 space-y-6 md:translate-x-12 lg:translate-x-20 transition-all duration-300 relative hover:shadow-slate-350/30">
           
           {/* Logo transparente */}
           <div className="flex flex-col items-center text-center space-y-2 mb-4">

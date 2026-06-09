@@ -163,7 +163,7 @@ export default function CalendarPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Calendário Mensal (8 Colunas) */}
-        <div className="lg:col-span-8 bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm">
+        <div className="lg:col-span-8 bg-white rounded-lg p-4 md:p-6 border border-slate-200/60 shadow-sm">
           {/* Header do Calendário */}
           <div className="flex items-center justify-between pb-6 border-b border-slate-100">
             <h3 className="font-extrabold text-slate-800 text-lg capitalize">
@@ -201,7 +201,7 @@ export default function CalendarPage() {
                 <button
                   key={idx}
                   onClick={() => setSelectedDate(day)}
-                  className={`min-h-[75px] p-2 rounded-md flex flex-col justify-between border transition-all duration-200 text-left relative ${
+                  className={`min-h-[44px] md:min-h-[75px] p-1 md:p-2 rounded-md flex flex-col justify-between border transition-all duration-200 text-left relative ${
                     !isCurrentMonth 
                       ? 'text-slate-300 bg-slate-50/30 border-transparent' 
                       : isSelected
@@ -209,11 +209,11 @@ export default function CalendarPage() {
                         : 'bg-white hover:bg-slate-50 border-slate-100 text-slate-700'
                   }`}
                 >
-                  <span className="font-bold text-xs">{format(day, 'd')}</span>
+                  <span className="font-bold text-[10px] md:text-xs">{format(day, 'd')}</span>
                   
-                  {/* Indicador de Reuniões */}
+                  {/* Indicador de Reuniões no Desktop */}
                   {dayMeetings.length > 0 && (
-                    <div className="flex flex-col gap-1 w-full mt-2">
+                    <div className="hidden md:flex flex-col gap-1 w-full mt-2">
                       {dayMeetings.slice(0, 2).map(m => (
                         <div 
                           key={m.id}
@@ -233,6 +233,13 @@ export default function CalendarPage() {
                       )}
                     </div>
                   )}
+
+                  {/* Indicador de Reuniões no Mobile (Dot) */}
+                  {dayMeetings.length > 0 && (
+                    <div className="md:hidden flex justify-center w-full mt-1">
+                      <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-[#C5A85A]'}`} />
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -243,7 +250,7 @@ export default function CalendarPage() {
         <div className="lg:col-span-4 space-y-6">
           
           {/* Reuniões do Dia Selecionado */}
-          <div className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm space-y-4">
+          <div className="bg-white rounded-lg p-4 md:p-6 border border-slate-200/60 shadow-sm space-y-4">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <div>
                 <h3 className="font-bold text-slate-800 text-sm">Reuniões do Dia</h3>
@@ -297,7 +304,7 @@ export default function CalendarPage() {
       {/* Modal Premium de Agendamento Manual */}
       {showAddForm && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
-          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
             
             {/* Header do Modal */}
             <div className="flex items-center justify-between px-6 py-4 bg-[#1E2538] text-white rounded-t-lg">

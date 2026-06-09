@@ -272,7 +272,7 @@ export default function Dashboard() {
   const completionRate = totalPlans > 0 ? Math.round((completedPlans / totalPlans) * 100) : 0;
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-6 md:space-y-8 animate-fadeIn">
       {/* Cabeçalho */}
       <div>
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Dashboard</h1>
@@ -282,7 +282,7 @@ export default function Dashboard() {
       {/* Grid de Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Card 1: Conclusão de Planos */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200/60 flex items-center justify-between transition-all hover:shadow-md hover:-translate-y-0.5">
+        <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-slate-200/60 flex items-center justify-between transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="space-y-2">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Planos de Ação</p>
             <h3 className="text-2xl font-extrabold text-slate-800 flex items-baseline gap-2">
@@ -302,7 +302,7 @@ export default function Dashboard() {
         </div>
 
         {/* Card 2: Planos Atrasados */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200/60 flex items-center justify-between transition-all hover:shadow-md hover:-translate-y-0.5">
+        <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-slate-200/60 flex items-center justify-between transition-all hover:shadow-md hover:-translate-y-0.5 animate-fadeIn">
           <div className="space-y-1">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Planos Atrasados</p>
             <h3 className={`text-2xl font-extrabold ${delayedPlans > 0 ? 'text-rose-500' : 'text-slate-800'}`}>
@@ -320,7 +320,7 @@ export default function Dashboard() {
         </div>
 
         {/* Card 3: Status dos Indicadores */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200/60 flex items-center justify-between transition-all hover:shadow-md hover:-translate-y-0.5">
+        <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-slate-200/60 flex items-center justify-between transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="space-y-1">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Atingimento de Metas</p>
             <h3 className="text-2xl font-extrabold text-slate-800 flex items-baseline gap-2">
@@ -345,7 +345,7 @@ export default function Dashboard() {
       <div className="flex flex-col gap-6">
         
         {/* Diagnóstico por IA (Senda AI) - Horizontal de Largura Inteira */}
-        <div className="bg-gradient-to-br from-[#1E2538] to-[#111622] text-white rounded-lg p-6 shadow-lg border border-slate-800 relative overflow-hidden group">
+        <div className="bg-gradient-to-br from-[#1E2538] to-[#111622] text-white rounded-lg p-4 md:p-6 shadow-lg border border-slate-800 relative overflow-hidden group">
           {/* Efeito luminoso de fundo */}
           <div className="absolute -right-20 -top-20 w-48 h-48 bg-[#C5A85A] rounded-full blur-[80px] opacity-10 pointer-events-none" />
 
@@ -387,7 +387,7 @@ export default function Dashboard() {
         </div>
 
         {/* Gráfico de Evolução de Indicadores Chave - Horizontal de Largura Inteira */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200/60 space-y-4">
+        <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-slate-200/60 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-bold text-slate-800 text-base">Evolução dos Indicadores Chave</h3>
@@ -396,7 +396,7 @@ export default function Dashboard() {
             <span className="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full font-medium">Dados de Meta</span>
           </div>
 
-          <div className="h-[320px] w-full pt-4">
+          <div className="h-[240px] md:h-[320px] w-full pt-4">
             <DashboardChart indicators={safeIndicators} chartData={chartData} />
           </div>
         </div>
@@ -404,7 +404,7 @@ export default function Dashboard() {
       </div>
 
       {/* Planos de Ação Recentes */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200/60">
+      <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-slate-200/60">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-bold text-slate-800 text-base">Ações Críticas sob Acompanhamento</h3>

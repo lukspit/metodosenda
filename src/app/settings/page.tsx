@@ -293,7 +293,7 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Lado Esquerdo: Gestão da Identidade e Cultura (8 Colunas) */}
-        <div className="lg:col-span-8 bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm space-y-6">
+        <div className="lg:col-span-8 bg-white rounded-lg p-4 md:p-6 border border-slate-200/60 shadow-sm space-y-6">
           <h3 className="font-bold text-slate-850 text-base mb-2 flex items-center gap-2">
             <Compass className="w-5 h-5 text-[#C5A85A]" />
             Identidade Estratégica (Cultura)
@@ -364,7 +364,7 @@ Agilidade e capricho"
         <div className="lg:col-span-4 space-y-6">
           
           {/* Listagem de Membros da Equipe */}
-          <div className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm space-y-4">
+          <div className="bg-white rounded-lg p-4 md:p-6 border border-slate-200/60 shadow-sm space-y-4">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <h3 className="font-bold text-slate-850 text-sm flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#C5A85A]" />
@@ -468,7 +468,7 @@ Agilidade e capricho"
           )}
 
           {/* Permissões do Sistema */}
-          <div className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm space-y-3">
+          <div className="bg-white rounded-lg p-4 md:p-6 border border-slate-200/60 shadow-sm space-y-3">
             <h3 className="font-bold text-slate-850 text-sm flex items-center gap-2">
               <Shield className="w-4 h-4 text-[#C5A85A]" />
               Funções de Acesso
@@ -497,7 +497,7 @@ Agilidade e capricho"
       {/* Modal Premium de Convite de Membro da Equipe */}
       {isInviteModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
-          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
             
             {/* Header do Modal */}
             <div className="flex items-center justify-between px-6 py-4 bg-[#1E2538] text-white rounded-t-lg">
@@ -645,7 +645,7 @@ Agilidade e capricho"
       {/* Modal Premium de Cadastro de Empresa Cliente */}
       {isCreateTenantModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
-          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
             
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 bg-[#1E2538] text-white rounded-t-lg">
@@ -887,7 +887,7 @@ Agilidade e capricho"
       {/* Modal Premium de Gerenciamento de Acessos */}
       {isAccessModalOpen && selectedTenantForAccess && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
-          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
             
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 bg-[#1E2538] text-white rounded-t-lg">

@@ -389,7 +389,7 @@ export default function OrganizationalChart() {
         {/* Banner informativo de navegação no organograma */}
         <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md text-white text-[10px] px-3 py-1.5 rounded-full font-medium shadow-md">
           <Info className="w-3.5 h-3.5 text-[#C5A85A]" />
-          Use o scroll do mouse para Zoom, ou arraste a tela para navegar.
+          Pince a tela ou use scroll para Zoom, e arraste para navegar.
         </div>
 
         {loading ? (
@@ -426,7 +426,7 @@ export default function OrganizationalChart() {
       {/* Modal Premium de Edição / Criação */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
-          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
             
             {/* Header do Modal */}
             <div className="flex items-center justify-between px-6 py-4 bg-[#1E2538] text-white rounded-t-lg">

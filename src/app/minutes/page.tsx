@@ -342,7 +342,7 @@ export default function MinutesPage() {
         {/* Lado Esquerdo: Redigir Ata & Lista de Atas (7 Colunas) */}
         <div className="lg:col-span-7 space-y-6">
           {/* Escrever Nova Ata */}
-          <div className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm">
+          <div className="bg-white rounded-lg p-4 md:p-6 border border-slate-200/60 shadow-sm">
             <h3 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5 text-[#C5A85A]" />
               Nova Ata de Reunião
@@ -525,7 +525,7 @@ export default function MinutesPage() {
 
         {/* Lado Direito: Resultados da Análise de IA (5 Colunas) */}
         <div className="lg:col-span-5">
-          <div className="bg-gradient-to-br from-[#1E2538] to-[#111622] text-white rounded-lg p-6 border border-slate-800 shadow-xl min-h-[400px] flex flex-col justify-between relative overflow-hidden sticky top-6">
+          <div className="bg-gradient-to-br from-[#1E2538] to-[#111622] text-white rounded-lg p-4 md:p-6 border border-slate-800 shadow-xl min-h-[400px] flex flex-col justify-between relative overflow-hidden lg:sticky lg:top-6">
             
             {/* Brilho da IA */}
             <div className="absolute -right-10 -top-10 w-32 h-32 bg-[#C5A85A] rounded-full blur-[70px] opacity-10 pointer-events-none" />

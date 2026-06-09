@@ -46,3 +46,53 @@ body {
   background-size: 200% 100%;
   animation: skeletonShimmer 1.5s ease-in-out infinite;
 }
+
+/* Animações customizadas para Mobile e PWA */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Utilitário para Safe Areas de Dispositivos Móveis */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Otimizações de Toque (Mobile Polish) */
+button, a, select, input {
+  touch-action: manipulation;
+}
+
+/* Forçar áreas interativas a respeitarem tamanhos mínimos de toque no mobile */
+@media (max-width: 767px) {
+  button, 
+  a, 
+  select {
+    min-height: 40px; /* Garante usabilidade excelente preservando design compacto */
+  }
+  
+  /* Botões principais de menu e navegação superior/inferior */
+  header button,
+  .md\:hidden fixed button,
+  .fixed button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
