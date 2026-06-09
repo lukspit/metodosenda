@@ -204,7 +204,7 @@ interface AppContextProps {
   updateActionPlanStatus: (id: string, status: ActionPlan['status'], progress: number) => Promise<boolean>;
   updateTenantCulture: (culture: { mission?: string; vision?: string; values?: string; purpose?: string }) => Promise<boolean>;
   saveDashboardInsights: (insights: string) => Promise<boolean>;
-  createTenant: (tenant: Partial<Tenant>) => Promise<boolean>;
+  createTenant: (tenant: Partial<Tenant>) => Promise<Tenant | null>;
   associateConsultant: (userId: string, tenantId: string) => Promise<boolean>;
   dissociateConsultant: (userId: string, tenantId: string) => Promise<boolean>;
   fetchAssociatedConsultants: (tenantId: string) => Promise<string[]>;
@@ -1037,7 +1037,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const createTenant = async (tenant: Partial<Tenant>): Promise<boolean> => {
+  const createTenant = async (tenant: Partial<Tenant>): Promise<Tenant | null> => {
     try {
       const newTenant = {
         name: tenant.name || 'Nova Empresa',
@@ -1046,13 +1046,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         values: tenant.values || '',
         purpose: tenant.purpose || ''
       };
-      const { error } = await supabase.from('tenants').insert([newTenant]);
+      const { data, error } = await supabase.from('tenants').insert([newTenant]).select().single();
       if (error) throw error;
-      await refreshData();
-      return true;
+      if (data) {
+        setTenants(prev => [...prev, data]);
+        return data as Tenant;
+      }
+      return null;
     } catch (err) {
       console.error('Erro ao criar empresa no Supabase:', err);
-      return false;
+      return null;
     }
   };
 

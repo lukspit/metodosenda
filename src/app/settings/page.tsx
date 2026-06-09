@@ -16,8 +16,17 @@ import {
   Loader2,
   Lock,
   Mail,
-  User
+  User,
+  Trash2,
+  Plus
 } from 'lucide-react';
+
+interface InitialMember {
+  name: string;
+  email: string;
+  role: 'admin' | 'consultor' | 'colaborador';
+  password: string;
+}
 
 export default function SettingsPage() {
   const { 
@@ -59,6 +68,12 @@ export default function SettingsPage() {
   const [tenantPurpose, setTenantPurpose] = useState('');
   const [tenantLoading, setTenantLoading] = useState(false);
   const [tenantError, setTenantError] = useState<string | null>(null);
+
+  // Estados para membros iniciais no cadastro de empresa
+  const [initialMembers, setInitialMembers] = useState<InitialMember[]>([
+    { name: '', email: '', role: 'admin', password: '' }
+  ]);
+  const [memberCreationProgress, setMemberCreationProgress] = useState<string | null>(null);
 
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [selectedTenantForAccess, setSelectedTenantForAccess] = useState<any | null>(null);
@@ -138,14 +153,45 @@ export default function SettingsPage() {
 
   const isSendaAdmin = currentProfile?.role === 'admin' && (currentProfile.tenant_id === 't-senda' || currentTenant?.name === 'Senda Consultoria');
 
+  const handleAddMember = () => {
+    setInitialMembers(prev => [...prev, { name: '', email: '', role: 'colaborador', password: '' }]);
+  };
+
+  const handleRemoveMember = (index: number) => {
+    if (index === 0) return; // Não pode remover o admin obrigatório
+    setInitialMembers(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMemberChange = (index: number, field: keyof InitialMember, value: string) => {
+    setInitialMembers(prev => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
+  };
+
   const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tenantName.trim()) return;
 
+    // Validar que o admin obrigatório está preenchido
+    const adminMember = initialMembers[0];
+    if (!adminMember.name.trim() || !adminMember.email.trim() || !adminMember.password || adminMember.password.length < 6) {
+      setTenantError('Preencha os dados do Administrador da empresa (nome, email e senha com mín. 6 caracteres).');
+      return;
+    }
+
+    // Validar membros adicionais preenchidos
+    for (let i = 1; i < initialMembers.length; i++) {
+      const m = initialMembers[i];
+      if (!m.name.trim() || !m.email.trim() || !m.password || m.password.length < 6) {
+        setTenantError(`Preencha todos os campos do membro #${i + 1} (nome, email e senha com mín. 6 caracteres).`);
+        return;
+      }
+    }
+
     setTenantLoading(true);
     setTenantError(null);
+    setMemberCreationProgress(null);
 
-    const success = await createTenant({
+    // 1. Criar a empresa
+    const createdTenant = await createTenant({
       name: tenantName,
       mission: tenantMission,
       vision: tenantVision,
@@ -153,17 +199,60 @@ export default function SettingsPage() {
       purpose: tenantPurpose
     });
 
+    if (!createdTenant) {
+      setTenantLoading(false);
+      setTenantError('Erro ao cadastrar a empresa cliente no banco de dados.');
+      return;
+    }
+
+    // 2. Criar os membros encadeados
+    let createdCount = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < initialMembers.length; i++) {
+      const member = initialMembers[i];
+      setMemberCreationProgress(`Criando usuário ${i + 1} de ${initialMembers.length}...`);
+      
+      try {
+        const res = await fetch('/api/users/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: member.name,
+            email: member.email,
+            password: member.password,
+            role: member.role,
+            department_id: null,
+            tenant_id: createdTenant.id
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          errors.push(`${member.email}: ${data.error}`);
+        } else {
+          createdCount++;
+        }
+      } catch (err: any) {
+        errors.push(`${member.email}: ${err.message || 'Erro de rede'}`);
+      }
+    }
+
     setTenantLoading(false);
-    if (success) {
+    setMemberCreationProgress(null);
+
+    if (errors.length > 0) {
+      setTenantError(`Empresa criada, mas houve erros em ${errors.length} usuário(s):\n${errors.join('\n')}`);
+    } else {
       setIsCreateTenantModalOpen(false);
       setTenantName('');
       setTenantMission('');
       setTenantVision('');
       setTenantValues('');
       setTenantPurpose('');
-      alert(`Empresa "${tenantName}" cadastrada com sucesso!`);
-    } else {
-      setTenantError('Erro ao cadastrar a empresa cliente no banco de dados.');
+      setInitialMembers([{ name: '', email: '', role: 'admin', password: '' }]);
+      alert(`Empresa "${tenantName}" criada com sucesso!\n${createdCount} usuário(s) cadastrado(s).`);
+      await refreshData();
     }
   };
 
@@ -649,6 +738,122 @@ Agilidade e capricho"
                   className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-[#C5A85A] resize-none"
                 />
               </div>
+
+              {/* Seção de Usuários Iniciais da Empresa */}
+              <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-[#C5A85A]" />
+                    Usuários Iniciais da Empresa
+                  </h4>
+                </div>
+
+                {initialMembers.map((member, index) => (
+                  <div key={index} className={`p-3.5 rounded-lg border space-y-3 ${index === 0 ? 'border-[#C5A85A]/30 bg-[#C5A85A]/5' : 'border-slate-200 bg-slate-50'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wide ${
+                        index === 0 ? 'bg-[#C5A85A]/20 text-[#C5A85A]' : 'bg-slate-200 text-slate-500'
+                      }`}>
+                        {index === 0 ? '★ Administrador (Obrigatório)' : `Membro #${index + 1}`}
+                      </span>
+                      {index > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMember(index)}
+                          className="p-1 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                          title="Remover membro"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Nome *</label>
+                        <div className="relative">
+                          <span className="absolute inset-y-0 left-0 pl-2 flex items-center text-slate-400">
+                            <User className="w-3 h-3" />
+                          </span>
+                          <input
+                            type="text"
+                            required
+                            value={member.name}
+                            onChange={e => handleMemberChange(index, 'name', e.target.value)}
+                            placeholder="Nome completo"
+                            className="w-full bg-white text-[11px] text-slate-700 border border-slate-200 rounded py-2 pl-7 pr-2 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Email *</label>
+                        <div className="relative">
+                          <span className="absolute inset-y-0 left-0 pl-2 flex items-center text-slate-400">
+                            <Mail className="w-3 h-3" />
+                          </span>
+                          <input
+                            type="email"
+                            required
+                            value={member.email}
+                            onChange={e => handleMemberChange(index, 'email', e.target.value)}
+                            placeholder="email@empresa.com"
+                            className="w-full bg-white text-[11px] text-slate-700 border border-slate-200 rounded py-2 pl-7 pr-2 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Senha *</label>
+                        <div className="relative">
+                          <span className="absolute inset-y-0 left-0 pl-2 flex items-center text-slate-400">
+                            <Lock className="w-3 h-3" />
+                          </span>
+                          <input
+                            type="password"
+                            required
+                            value={member.password}
+                            onChange={e => handleMemberChange(index, 'password', e.target.value)}
+                            placeholder="Mín. 6 caracteres"
+                            className="w-full bg-white text-[11px] text-slate-700 border border-slate-200 rounded py-2 pl-7 pr-2 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Cargo</label>
+                        <select
+                          value={member.role}
+                          onChange={e => handleMemberChange(index, 'role', e.target.value)}
+                          disabled={index === 0}
+                          className={`w-full text-[11px] border border-slate-200 rounded py-2 px-2 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] ${index === 0 ? 'bg-[#C5A85A]/10 text-[#C5A85A] font-bold cursor-not-allowed' : 'bg-white text-slate-700'}`}
+                        >
+                          <option value="admin">Administrador</option>
+                          <option value="consultor">Consultor</option>
+                          <option value="colaborador">Colaborador</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={handleAddMember}
+                  className="w-full py-2 border-2 border-dashed border-slate-300 hover:border-[#C5A85A] text-slate-400 hover:text-[#C5A85A] rounded-lg transition-all flex items-center justify-center gap-1.5 text-[11px] font-bold"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Adicionar Membro da Equipe
+                </button>
+              </div>
+
+              {/* Status de Progresso */}
+              {memberCreationProgress && (
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-600 px-4 py-2.5 rounded-md text-xs font-semibold">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  {memberCreationProgress}
+                </div>
+              )}
 
               {/* Botões */}
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
