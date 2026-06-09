@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useApp, ActionPlan } from '../context/AppContext';
 
@@ -26,7 +26,7 @@ import {
 import { SkeletonDashboard } from '../components/SkeletonDashboard';
 
 export default function Dashboard() {
-  const { currentTenant, indicators, actionPlans, loading } = useApp();
+  const { currentTenant, indicators, actionPlans, loading, saveDashboardInsights } = useApp();
   const [aiInsight, setAiInsight] = useState<string>('');
   const [loadingInsight, setLoadingInsight] = useState(false);
 
@@ -51,7 +51,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (currentTenant) {
-      setAiInsight(getStaticDiagnostic());
+      const saved = currentTenant.dashboard_insights || (typeof window !== 'undefined' ? localStorage.getItem(`insights-${currentTenant.id}`) : null);
+      if (saved) {
+        setAiInsight(saved);
+      } else {
+        setAiInsight(getStaticDiagnostic());
+      }
     }
   }, [currentTenant, actionPlans]);
 
@@ -80,12 +85,20 @@ export default function Dashboard() {
         const formattedInsight = data.insight
           .replace(/\n/g, '<br />')
           .replace(/### (.*)/g, '<h3 class="text-sm font-bold text-[#C5A85A] mt-3 mb-2">$1</h3>')
-          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+          .replace(/## (.*)/g, '<h2 class="text-base font-extrabold text-[#C5A85A] mt-4 mb-2 border-b border-slate-800 pb-1">$1</h2>');
+        
         setAiInsight(formattedInsight);
+        await saveDashboardInsights(formattedInsight);
       }
     } catch (err) {
       console.error(err);
-      setAiInsight(getStaticDiagnostic() + '<p class="text-red-500 text-xs mt-2">Nota: Não foi possível atualizar os dados em tempo real pela IA. Exibindo diagnóstico offline.</p>');
+      const saved = currentTenant.dashboard_insights || (typeof window !== 'undefined' ? localStorage.getItem(`insights-${currentTenant.id}`) : null);
+      if (saved) {
+        setAiInsight(saved + '<p class="text-amber-500 text-[10px] mt-2">Nota: Conexão offline. Exibindo diagnóstico salvo anteriormente.</p>');
+      } else {
+        setAiInsight(getStaticDiagnostic() + '<p class="text-red-500 text-xs mt-2">Nota: Não foi possível atualizar os dados em tempo real pela IA. Exibindo diagnóstico offline.</p>');
+      }
     } finally {
       setLoadingInsight(false);
     }
@@ -100,6 +113,31 @@ export default function Dashboard() {
   const completedPlans = actionPlans.filter(p => p.status === 'concluido').length;
   const delayedPlans = actionPlans.filter(p => p.status === 'atrasado').length;
   const completionRate = totalPlans > 0 ? Math.round((completedPlans / totalPlans) * 100) : 0;
+
+  // Calcular atingimento médio real dos KPIs baseados na medição mais recente de cada um
+  const averageAtingimento = useMemo(() => {
+    const activeIndicators = indicators.filter(ind => ind.year === 2026);
+    if (activeIndicators.length === 0) return 0;
+
+    let totalAtingimento = 0;
+    let indicatorsWithData = 0;
+
+    activeIndicators.forEach(ind => {
+      const lastMeas = ind.measurements.length > 0 
+        ? ind.measurements[ind.measurements.length - 1] 
+        : null;
+      
+      if (lastMeas && typeof lastMeas.value === 'number' && ind.target > 0) {
+        const atingimento = Math.min((lastMeas.value / ind.target) * 100, 100);
+        totalAtingimento += atingimento;
+        indicatorsWithData++;
+      }
+    });
+
+    return indicatorsWithData > 0 
+      ? Math.round(totalAtingimento / indicatorsWithData) 
+      : 0;
+  }, [indicators]);
 
   // Mapeamento de meses para o gráfico
   const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -173,12 +211,16 @@ export default function Dashboard() {
           <div className="space-y-1">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Atingimento de Metas</p>
             <h3 className="text-2xl font-extrabold text-slate-800 flex items-baseline gap-2">
-              {indicators.length > 0 ? '82%' : '0%'}
-              <span className="text-xs font-normal text-emerald-500 flex items-center gap-0.5">
-                <TrendingUp className="w-3 h-3" /> +2.4%
-              </span>
+              {averageAtingimento}%
+              {averageAtingimento > 0 && (
+                <span className={`text-xs font-normal flex items-center gap-0.5 ${
+                  averageAtingimento >= 80 ? 'text-emerald-500' : 'text-amber-500'
+                }`}>
+                  <TrendingUp className="w-3 h-3" /> Realizado
+                </span>
+              )}
             </h3>
-            <p className="text-xs text-slate-400">Média em relação às metas</p>
+            <p className="text-xs text-slate-400">Média das medições recentes</p>
           </div>
           <div className="w-12 h-12 rounded-md bg-amber-50 text-amber-500 flex items-center justify-center">
             <TrendingUp className="w-6 h-6" />
@@ -186,64 +228,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Grid Principal (Gráfico + IA) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Seções Horizontais: Senda AI Insights + Gráfico de Indicadores */}
+      <div className="flex flex-col gap-6">
         
-        {/* Gráfico de Evolução de Indicadores */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200/60 lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-slate-800 text-base">Evolução dos Indicadores Chave</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Acompanhamento dos valores medidos nos últimos meses.</p>
-            </div>
-            <span className="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full font-medium">Valores em Meta</span>
-          </div>
-
-          <div className="h-[280px] w-full pt-4">
-            {indicators.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorInd" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#C5A85A" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#C5A85A" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" className="" />
-                  <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1E2538', 
-                      borderColor: '#334155', 
-                      borderRadius: '8px',
-                      color: '#fff',
-                      fontSize: '12px'
-                    }} 
-                  />
-                  {indicators.map((ind, index) => (
-                    <Area 
-                      key={ind.id}
-                      type="monotone" 
-                      dataKey={ind.name} 
-                      stroke={index === 0 ? '#C5A85A' : index === 1 ? '#10B981' : '#3B82F6'} 
-                      strokeWidth={2.5}
-                      fillOpacity={1} 
-                      fill="url(#colorInd)" 
-                    />
-                  ))}
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                Nenhum indicador cadastrado para esta empresa.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Diagnóstico por IA (Senda AI) */}
-        <div className="bg-gradient-to-br from-[#1E2538] to-[#111622] text-white rounded-lg p-6 shadow-lg border border-slate-800 flex flex-col justify-between relative overflow-hidden group">
+        {/* Diagnóstico por IA (Senda AI) - Horizontal de Largura Inteira */}
+        <div className="bg-gradient-to-br from-[#1E2538] to-[#111622] text-white rounded-lg p-6 shadow-lg border border-slate-800 relative overflow-hidden group">
           {/* Efeito luminoso de fundo */}
           <div className="absolute -right-20 -top-20 w-48 h-48 bg-[#C5A85A] rounded-full blur-[80px] opacity-10 pointer-events-none" />
 
@@ -255,7 +244,7 @@ export default function Dashboard() {
               <button 
                 onClick={generateRealInsights}
                 disabled={loadingInsight}
-                className="p-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 rounded-lg text-slate-400 hover:text-white transition-all active:scale-95"
+                className="p-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 rounded-lg text-slate-400 hover:text-white transition-all active:scale-95 cursor-pointer"
                 title="Atualizar insights com IA real"
               >
                 <RefreshCw className={`w-4 h-4 ${loadingInsight ? 'animate-spin text-[#C5A85A]' : ''}`} />
@@ -272,14 +261,68 @@ export default function Dashboard() {
               </div>
             ) : (
               <div 
-                className="prose prose-invert max-w-none prose-sm leading-relaxed text-slate-300"
+                className="prose prose-invert max-w-none text-sm leading-relaxed text-slate-200"
                 dangerouslySetInnerHTML={{ __html: aiInsight }}
               />
             )}
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-800">
-            <p className="text-[10px] text-slate-500">Os insights são baseados no método estratégico da Senda Consultoria.</p>
+          <div className="mt-6 pt-4 border-t border-slate-850 flex items-center justify-between text-[10px] text-slate-500">
+            <span>Os insights são baseados no método estratégico da Senda Consultoria.</span>
+            <span className="font-semibold text-[#C5A85A]">Use o botão no topo para atualizar</span>
+          </div>
+        </div>
+
+        {/* Gráfico de Evolução de Indicadores Chave - Horizontal de Largura Inteira */}
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200/60 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-slate-800 text-base">Evolução dos Indicadores Chave</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Acompanhamento dos valores medidos nos últimos meses.</p>
+            </div>
+            <span className="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full font-medium">Dados de Meta</span>
+          </div>
+
+          <div className="h-[320px] w-full pt-4">
+            {indicators.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorInd" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#C5A85A" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#C5A85A" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                  <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1E2538', 
+                      borderColor: '#334155', 
+                      borderRadius: '8px',
+                      color: '#fff',
+                      fontSize: '12px'
+                    }} 
+                  />
+                  {indicators.slice(0, 4).map((ind, index) => (
+                    <Area 
+                      key={ind.id}
+                      type="monotone" 
+                      dataKey={ind.name} 
+                      stroke={index === 0 ? '#C5A85A' : index === 1 ? '#10B981' : index === 2 ? '#3B82F6' : '#8B5CF6'} 
+                      strokeWidth={2.5}
+                      fillOpacity={1} 
+                      fill="url(#colorInd)" 
+                    />
+                  ))}
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                Nenhum indicador cadastrado para esta empresa.
+              </div>
+            )}
           </div>
         </div>
 

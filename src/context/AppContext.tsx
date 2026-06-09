@@ -11,6 +11,7 @@ export interface Tenant {
   vision?: string;
   values?: string;
   purpose?: string;
+  dashboard_insights?: string;
 }
 
 export interface Profile {
@@ -189,6 +190,7 @@ interface AppContextProps {
   createMeetingMinute: (minute: Partial<MeetingMinute>) => Promise<boolean>;
   updateActionPlanStatus: (id: string, status: ActionPlan['status'], progress: number) => Promise<boolean>;
   updateTenantCulture: (culture: { mission?: string; vision?: string; values?: string; purpose?: string }) => Promise<boolean>;
+  saveDashboardInsights: (insights: string) => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
@@ -542,7 +544,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.error('Erro ao inicializar autenticação:', err);
         // Fallback para demonstração local em caso de erro na rede ou chaves
         setCurrentProfile(MOCK_PROFILES[1]); // Lucas
-        setCurrentTenantState(MOCK_TENANTS[0]); // Senda
+        const demoTenant = MOCK_TENANTS[0];
+        const localInsights = typeof window !== 'undefined' ? localStorage.getItem(`insights-${demoTenant.id}`) : null;
+        setCurrentTenantState({
+          ...demoTenant,
+          dashboard_insights: demoTenant.dashboard_insights || localInsights || undefined
+        });
         setLoading(false);
       }
     };
@@ -588,9 +595,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (tenantError) {
         console.error('Erro ao carregar tenant:', tenantError);
-        setCurrentTenantState(MOCK_TENANTS[0]);
+        const demoTenant = MOCK_TENANTS[0];
+        const localInsights = typeof window !== 'undefined' ? localStorage.getItem(`insights-${demoTenant.id}`) : null;
+        setCurrentTenantState({
+          ...demoTenant,
+          dashboard_insights: demoTenant.dashboard_insights || localInsights || undefined
+        });
       } else if (tenant) {
-        setCurrentTenantState(tenant);
+        const localInsights = typeof window !== 'undefined' ? localStorage.getItem(`insights-${tenant.id}`) : null;
+        setCurrentTenantState({
+          ...tenant,
+          dashboard_insights: tenant.dashboard_insights || localInsights || undefined
+        });
         
         // Carregar tenants disponíveis
         if (profile?.role === 'admin' || profile?.role === 'consultor') {
@@ -942,6 +958,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const saveDashboardInsights = async (insightsText: string): Promise<boolean> => {
+    if (!currentTenant) return false;
+    const updatedTenant = { ...currentTenant, dashboard_insights: insightsText };
+
+    // Salvar no localStorage como backup offline imediato
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`insights-${currentTenant.id}`, insightsText);
+    }
+
+    try {
+      const { error } = await supabase
+        .from('tenants')
+        .update({ dashboard_insights: insightsText })
+        .eq('id', currentTenant.id);
+      
+      if (error) throw error;
+      setCurrentTenantState(updatedTenant);
+      setTenants(prev => prev.map(t => t.id === currentTenant.id ? updatedTenant : t));
+      return true;
+    } catch (err) {
+      console.warn('Erro ao atualizar dashboard_insights no Supabase. Salvando localmente:', err);
+      setCurrentTenantState(updatedTenant);
+      setTenants(prev => prev.map(t => t.id === currentTenant.id ? updatedTenant : t));
+      return true;
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       loading,
@@ -968,7 +1011,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createMeeting,
       createMeetingMinute,
       updateActionPlanStatus,
-      updateTenantCulture
+      updateTenantCulture,
+      saveDashboardInsights
     }}>
       {children}
     </AppContext.Provider>
