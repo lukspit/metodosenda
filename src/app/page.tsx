@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useApp, ActionPlan } from '../context/AppContext';
 
 import { 
@@ -14,34 +15,22 @@ import {
   TrendingDown,
   CalendarDays
 } from 'lucide-react';
-import { 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  CartesianGrid 
-} from 'recharts';
+
 import { SkeletonDashboard } from '../components/SkeletonDashboard';
+
+const DashboardChart = dynamic(() => import('../components/DashboardChart'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center text-slate-400 text-sm animate-pulse">
+      Carregando gráfico...
+    </div>
+  )
+});
 
 export default function Dashboard() {
   const { currentTenant, indicators, actionPlans, loading, saveDashboardInsights } = useApp();
   const [aiInsight, setAiInsight] = useState<string>('');
   const [loadingInsight, setLoadingInsight] = useState(false);
-  const [showChart, setShowChart] = useState(false);
-
-  // Garantir montagem segura do gráfico após a estabilização do DOM (pós-skeleton)
-  useEffect(() => {
-    if (!loading) {
-      const timer = setTimeout(() => {
-        setShowChart(true);
-      }, 150); // 150ms de delay para reflow estável do DOM
-      return () => clearTimeout(timer);
-    } else {
-      setShowChart(false);
-    }
-  }, [loading]);
 
   // Fallbacks de segurança para arrays e objetos
   const safeIndicators = useMemo(() => indicators || [], [indicators]);
@@ -319,48 +308,7 @@ export default function Dashboard() {
           </div>
 
           <div className="h-[320px] w-full pt-4">
-            {showChart && safeIndicators.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorInd" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#C5A85A" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#C5A85A" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                  <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1E2538', 
-                      borderColor: '#334155', 
-                      borderRadius: '8px',
-                      color: '#fff',
-                      fontSize: '12px'
-                    }} 
-                  />
-                  {safeIndicators.slice(0, 4).map((ind, index) => {
-                    if (!ind || !ind.name) return null;
-                    return (
-                      <Area 
-                        key={ind.id || index}
-                        type="monotone" 
-                        dataKey={ind.name} 
-                        stroke={index === 0 ? '#C5A85A' : index === 1 ? '#10B981' : index === 2 ? '#3B82F6' : '#8B5CF6'} 
-                        strokeWidth={2.5}
-                        fillOpacity={1} 
-                        fill="url(#colorInd)" 
-                      />
-                    );
-                  })}
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                Nenhum indicador cadastrado para esta empresa.
-              </div>
-            )}
+            <DashboardChart indicators={safeIndicators} chartData={chartData} />
           </div>
         </div>
 

@@ -61,30 +61,9 @@ export function SkeletonDashboard() {
         ))}
       </div>
 
-      {/* Grid Principal (Gráfico + IA) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Gráfico Skeleton */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200/60 lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="skeleton-pulse h-5 w-56 rounded" />
-              <div className="skeleton-pulse h-3 w-72 rounded mt-2" />
-            </div>
-            <div className="skeleton-pulse h-6 w-24 rounded-full" />
-          </div>
-          <div className="h-[280px] w-full pt-4 flex items-end gap-3 px-4">
-            {/* Barras simulando o gráfico de área */}
-            {[60, 45, 75, 55, 80, 40, 70, 50, 65, 85, 48, 72].map((h, i) => (
-              <div
-                key={i}
-                className="skeleton-pulse rounded-t-sm flex-1"
-                style={{ height: `${h}%`, animationDelay: `${i * 0.08}s` }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Card de IA Skeleton */}
+      {/* Seções Horizontais: Senda AI Insights + Gráfico de Indicadores */}
+      <div className="flex flex-col gap-6">
+        {/* Card de IA Skeleton - Largura Inteira */}
         <div className="bg-gradient-to-br from-[#1E2538] to-[#111622] rounded-lg p-6 shadow-lg border border-slate-800 flex flex-col justify-between relative overflow-hidden">
           <div className="absolute -right-20 -top-20 w-48 h-48 bg-[#C5A85A] rounded-full blur-[80px] opacity-10 pointer-events-none" />
           <div className="space-y-4">
@@ -103,6 +82,27 @@ export function SkeletonDashboard() {
           </div>
           <div className="mt-6 pt-4 border-t border-slate-800">
             <div className="skeleton-pulse-dark h-3 w-48 rounded" />
+          </div>
+        </div>
+
+        {/* Gráfico Skeleton - Largura Inteira */}
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200/60 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="skeleton-pulse h-5 w-56 rounded" />
+              <div className="skeleton-pulse h-3 w-72 rounded mt-2" />
+            </div>
+            <div className="skeleton-pulse h-6 w-24 rounded-full" />
+          </div>
+          <div className="h-[320px] w-full pt-4 flex items-end gap-3 px-4">
+            {/* Barras simulando o gráfico de área */}
+            {[60, 45, 75, 55, 80, 40, 70, 50, 65, 85, 48, 72].map((h, i) => (
+              <div
+                key={i}
+                className="skeleton-pulse rounded-t-sm flex-1"
+                style={{ height: `${h}%`, animationDelay: `${i * 0.08}s` }}
+              />
+            ))}
           </div>
         </div>
       </div>
