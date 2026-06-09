@@ -204,6 +204,10 @@ interface AppContextProps {
   updateActionPlanStatus: (id: string, status: ActionPlan['status'], progress: number) => Promise<boolean>;
   updateTenantCulture: (culture: { mission?: string; vision?: string; values?: string; purpose?: string }) => Promise<boolean>;
   saveDashboardInsights: (insights: string) => Promise<boolean>;
+  createTenant: (tenant: Partial<Tenant>) => Promise<boolean>;
+  associateConsultant: (userId: string, tenantId: string) => Promise<boolean>;
+  dissociateConsultant: (userId: string, tenantId: string) => Promise<boolean>;
+  fetchAssociatedConsultants: (tenantId: string) => Promise<string[]>;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
@@ -1033,6 +1037,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const createTenant = async (tenant: Partial<Tenant>): Promise<boolean> => {
+    try {
+      const newTenant = {
+        name: tenant.name || 'Nova Empresa',
+        mission: tenant.mission || '',
+        vision: tenant.vision || '',
+        values: tenant.values || '',
+        purpose: tenant.purpose || ''
+      };
+      const { error } = await supabase.from('tenants').insert([newTenant]);
+      if (error) throw error;
+      await refreshData();
+      return true;
+    } catch (err) {
+      console.error('Erro ao criar empresa no Supabase:', err);
+      return false;
+    }
+  };
+
+  const associateConsultant = async (userId: string, tenantId: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('user_tenants')
+        .insert([{ user_id: userId, tenant_id: tenantId }]);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('Erro ao associar consultor no Supabase:', err);
+      return false;
+    }
+  };
+
+  const dissociateConsultant = async (userId: string, tenantId: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('user_tenants')
+        .delete()
+        .eq('user_id', userId)
+        .eq('tenant_id', tenantId);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('Erro ao desassociar consultor no Supabase:', err);
+      return false;
+    }
+  };
+
+  const fetchAssociatedConsultants = async (tenantId: string): Promise<string[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('user_tenants')
+        .select('user_id')
+        .eq('tenant_id', tenantId);
+      if (error) throw error;
+      return (data || []).map(d => d.user_id);
+    } catch (err) {
+      console.error('Erro ao buscar consultores associados no Supabase:', err);
+      return [];
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       loading,
@@ -1060,7 +1125,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createMeetingMinute,
       updateActionPlanStatus,
       updateTenantCulture,
-      saveDashboardInsights
+      saveDashboardInsights,
+      createTenant,
+      associateConsultant,
+      dissociateConsultant,
+      fetchAssociatedConsultants
     }}>
       {children}
     </AppContext.Provider>

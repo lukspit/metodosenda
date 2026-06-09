@@ -20,7 +20,19 @@ import {
 } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { currentTenant, updateTenantCulture, profiles, currentProfile, departments, refreshData } = useApp();
+  const { 
+    currentTenant, 
+    updateTenantCulture, 
+    profiles, 
+    currentProfile, 
+    departments, 
+    refreshData,
+    tenants,
+    createTenant,
+    associateConsultant,
+    dissociateConsultant,
+    fetchAssociatedConsultants
+  } = useApp();
 
   // Estados dos inputs de Cultura
   const [mission, setMission] = useState('');
@@ -37,6 +49,21 @@ export default function SettingsPage() {
   const [inviteDeptId, setInviteDeptId] = useState('');
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
+
+  // Estados para Gestão de Empresas (Senda Admin)
+  const [isCreateTenantModalOpen, setIsCreateTenantModalOpen] = useState(false);
+  const [tenantName, setTenantName] = useState('');
+  const [tenantMission, setTenantMission] = useState('');
+  const [tenantVision, setTenantVision] = useState('');
+  const [tenantValues, setTenantValues] = useState('');
+  const [tenantPurpose, setTenantPurpose] = useState('');
+  const [tenantLoading, setTenantLoading] = useState(false);
+  const [tenantError, setTenantError] = useState<string | null>(null);
+
+  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+  const [selectedTenantForAccess, setSelectedTenantForAccess] = useState<any | null>(null);
+  const [associatedConsultants, setAssociatedConsultants] = useState<string[]>([]);
+  const [accessLoading, setAccessLoading] = useState(false);
 
   // Carregar dados iniciais da cultura do tenant ativo
   useEffect(() => {
@@ -106,6 +133,63 @@ export default function SettingsPage() {
       setInviteError(err.message || 'Erro de rede ou permissão.');
     } finally {
       setInviteLoading(false);
+    }
+  };
+
+  const isSendaAdmin = currentProfile?.role === 'admin' && (currentProfile.tenant_id === 't-senda' || currentTenant?.name === 'Senda Consultoria');
+
+  const handleCreateTenant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tenantName.trim()) return;
+
+    setTenantLoading(true);
+    setTenantError(null);
+
+    const success = await createTenant({
+      name: tenantName,
+      mission: tenantMission,
+      vision: tenantVision,
+      values: tenantValues,
+      purpose: tenantPurpose
+    });
+
+    setTenantLoading(false);
+    if (success) {
+      setIsCreateTenantModalOpen(false);
+      setTenantName('');
+      setTenantMission('');
+      setTenantVision('');
+      setTenantValues('');
+      setTenantPurpose('');
+      alert(`Empresa "${tenantName}" cadastrada com sucesso!`);
+    } else {
+      setTenantError('Erro ao cadastrar a empresa cliente no banco de dados.');
+    }
+  };
+
+  const handleOpenAccessModal = async (tenant: any) => {
+    setSelectedTenantForAccess(tenant);
+    setAccessLoading(true);
+    const ids = await fetchAssociatedConsultants(tenant.id);
+    setAssociatedConsultants(ids);
+    setAccessLoading(false);
+    setIsAccessModalOpen(true);
+  };
+
+  const handleToggleAccess = async (consultantId: string) => {
+    if (!selectedTenantForAccess) return;
+    const isAssociated = associatedConsultants.includes(consultantId);
+    
+    if (isAssociated) {
+      const success = await dissociateConsultant(consultantId, selectedTenantForAccess.id);
+      if (success) {
+        setAssociatedConsultants(prev => prev.filter(id => id !== consultantId));
+      }
+    } else {
+      const success = await associateConsultant(consultantId, selectedTenantForAccess.id);
+      if (success) {
+        setAssociatedConsultants(prev => [...prev, consultantId]);
+      }
     }
   };
 
@@ -245,6 +329,54 @@ Agilidade e capricho"
               })}
             </div>
           </div>
+
+          {/* Card de Empresas Clientes (Apenas Senda Admin) */}
+          {isSendaAdmin && (
+            <div className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                <h3 className="font-bold text-slate-850 text-sm flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 text-[#C5A85A]" />
+                  Empresas Clientes (Consultoria)
+                </h3>
+                <button
+                  onClick={() => setIsCreateTenantModalOpen(true)}
+                  className="p-1.5 bg-[#C5A85A]/10 text-[#C5A85A] hover:bg-[#C5A85A] hover:text-white rounded-lg transition-colors cursor-pointer"
+                  title="Cadastrar Nova Empresa"
+                >
+                  <UserPlus className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Listagem de Clientes */}
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                {tenants.filter(t => t.name !== 'Senda Consultoria' && t.id !== 't-senda').length > 0 ? (
+                  tenants
+                    .filter(t => t.name !== 'Senda Consultoria' && t.id !== 't-senda')
+                    .map((t) => (
+                      <div 
+                        key={t.id}
+                        className="flex items-center justify-between gap-3 p-3 bg-slate-50 border border-slate-100 rounded-md"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-xs text-slate-850 truncate">{t.name}</h4>
+                          <p className="text-[9px] text-slate-400 truncate">Propósito: {t.purpose || 'Sem propósito definido'}</p>
+                        </div>
+
+                        <button
+                          onClick={() => handleOpenAccessModal(t)}
+                          className="px-2.5 py-1.5 bg-[#1E2538] hover:bg-[#2c3752] text-white rounded text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                        >
+                          <Shield className="w-3 h-3 text-[#C5A85A]" />
+                          Acessos
+                        </button>
+                      </div>
+                    ))
+                ) : (
+                  <p className="text-xs text-slate-400 text-center py-4">Nenhuma empresa cliente cadastrada.</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Permissões do Sistema */}
           <div className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm space-y-3">
@@ -417,6 +549,228 @@ Agilidade e capricho"
               </div>
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* Modal Premium de Cadastro de Empresa Cliente */}
+      {isCreateTenantModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 bg-[#1E2538] text-white rounded-t-lg">
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-[#C5A85A]" />
+                <h3 className="font-bold text-sm uppercase tracking-wider text-white">
+                  Cadastrar Empresa Cliente
+                </h3>
+              </div>
+              <button 
+                onClick={() => { setIsCreateTenantModalOpen(false); setTenantError(null); }}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Formulário */}
+            <form onSubmit={handleCreateTenant} className="p-6 space-y-4 text-left">
+              {tenantError && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-md text-xs font-semibold">
+                  {tenantError}
+                </div>
+              )}
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block mb-1">
+                  Nome da Empresa *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={tenantName}
+                  onChange={e => setTenantName(e.target.value)}
+                  placeholder="Ex: Indústrias Metalúrgicas S.A."
+                  className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block mb-1">
+                    Missão
+                  </label>
+                  <textarea
+                    value={tenantMission}
+                    onChange={e => setTenantMission(e.target.value)}
+                    rows={3}
+                    placeholder="A razão de existir da empresa..."
+                    className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-[#C5A85A] resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block mb-1">
+                    Visão de Negócio
+                  </label>
+                  <textarea
+                    value={tenantVision}
+                    onChange={e => setTenantVision(e.target.value)}
+                    rows={3}
+                    placeholder="Onde a empresa quer estar no futuro..."
+                    className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-[#C5A85A] resize-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block mb-1">
+                  Propósito
+                </label>
+                <input
+                  type="text"
+                  value={tenantPurpose}
+                  onChange={e => setTenantPurpose(e.target.value)}
+                  placeholder="O impacto que a empresa quer causar..."
+                  className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block mb-1">
+                  Valores (Um por linha)
+                </label>
+                <textarea
+                  value={tenantValues}
+                  onChange={e => setTenantValues(e.target.value)}
+                  rows={4}
+                  placeholder="Ex:&#10;Ética&#10;Qualidade&#10;Resultado"
+                  className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 px-3 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-[#C5A85A] resize-none"
+                />
+              </div>
+
+              {/* Botões */}
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => { setIsCreateTenantModalOpen(false); setTenantError(null); }}
+                  className="px-4 py-2 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors text-xs font-semibold text-slate-500"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={tenantLoading || !tenantName.trim()}
+                  className="bg-[#1E2538] hover:bg-[#2c3752] text-white disabled:opacity-40 font-semibold py-2 px-5 rounded-md shadow transition-colors flex items-center gap-1.5 text-xs cursor-pointer"
+                >
+                  {tenantLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C5A85A]" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar Empresa'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Premium de Gerenciamento de Acessos */}
+      {isAccessModalOpen && selectedTenantForAccess && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 bg-[#1E2538] text-white rounded-t-lg">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-[#C5A85A]" />
+                <h3 className="font-bold text-sm uppercase tracking-wider text-white">
+                  Acessos: {selectedTenantForAccess.name}
+                </h3>
+              </div>
+              <button 
+                onClick={() => { setIsAccessModalOpen(false); setSelectedTenantForAccess(null); }}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-500 leading-relaxed text-left">
+                Selecione quais consultores e administradores da **Senda Consultoria** terão acesso para visualizar e gerenciar os dados desta empresa.
+              </p>
+
+              {accessLoading ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-2">
+                  <Loader2 className="w-6 h-6 animate-spin text-[#C5A85A]" />
+                  <span className="text-xs text-slate-400">Carregando permissões...</span>
+                </div>
+              ) : (
+                <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                  {profiles.filter(p => p.role === 'consultor' || p.role === 'admin').length > 0 ? (
+                    profiles
+                      .filter(p => p.role === 'consultor' || p.role === 'admin')
+                      .map((consultant) => {
+                        const isAssociated = associatedConsultants.includes(consultant.id);
+                        const isOriginalSendaAdmin = consultant.role === 'admin' && consultant.tenant_id === 't-senda';
+                        
+                        return (
+                          <label 
+                            key={consultant.id} 
+                            className={`flex items-center justify-between p-3 border rounded-lg transition-all select-none cursor-pointer ${
+                              isAssociated 
+                                ? 'border-[#C5A85A] bg-[#C5A85A]/5' 
+                                : 'border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={isAssociated || isOriginalSendaAdmin}
+                                disabled={isOriginalSendaAdmin}
+                                onChange={() => handleToggleAccess(consultant.id)}
+                                className="w-4 h-4 border-slate-300 rounded text-[#C5A85A] focus:ring-[#C5A85A] accent-[#C5A85A]"
+                              />
+                              <div className="text-left">
+                                <p className="text-xs font-bold text-slate-800">{consultant.name}</p>
+                                <p className="text-[10px] text-slate-450">{consultant.email}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wide inline-block ${
+                                consultant.role === 'admin' 
+                                  ? 'bg-rose-500/10 text-rose-500' 
+                                  : 'bg-[#C5A85A]/10 text-[#C5A85A]'
+                              }`}>
+                                {consultant.role}
+                              </span>
+                            </div>
+                          </label>
+                        );
+                      })
+                  ) : (
+                    <p className="text-xs text-slate-400 text-center py-4">Nenhum consultor disponível.</p>
+                  )}
+                </div>
+              )}
+
+              {/* Botão de Fechar */}
+              <div className="flex items-center justify-end pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => { setIsAccessModalOpen(false); setSelectedTenantForAccess(null); }}
+                  className="bg-[#1E2538] hover:bg-[#2c3752] text-white font-semibold py-2 px-6 rounded-md shadow transition-colors text-xs cursor-pointer"
+                >
+                  Concluído
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
