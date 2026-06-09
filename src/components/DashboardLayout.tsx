@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabaseClient';
 import { 
   Home, 
   GitBranch, 
@@ -18,15 +19,27 @@ import {
   Heart, 
   Users, 
   Layers,
-  ChevronUp
+  ChevronUp,
+  LogOut
 } from 'lucide-react';
 
 export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const { currentTenant, tenants, setCurrentTenant, currentProfile } = useApp();
   const [showCulture, setShowCulture] = useState(false);
   const [showTenantDropdown, setShowTenantDropdown] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  if (pathname === '/login') {
+    return <>{children}</>;
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: Home },
@@ -134,6 +147,18 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                 </Link>
               );
             })}
+
+            {/* Botão de Sair */}
+            <button
+              onClick={handleLogout}
+              title={!isSidebarOpen ? 'Sair' : undefined}
+              className={`w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 group hover:bg-rose-500/10 hover:text-rose-500 ${
+                isSidebarOpen ? 'gap-3 px-3 py-2.5 justify-start' : 'p-3 justify-center'
+              }`}
+            >
+              <LogOut className="w-5 h-5 text-slate-400 group-hover:text-rose-500 transition-transform duration-200 group-hover:scale-110" />
+              {isSidebarOpen && <span className="truncate animate-fadeIn">Sair</span>}
+            </button>
           </nav>
         </div>
 

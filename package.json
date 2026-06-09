@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.108.0",
     "@xyflow/react": "^12.11.0",
     "date-fns": "^4.4.0",

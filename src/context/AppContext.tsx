@@ -94,8 +94,14 @@ interface AppContextProps {
   meetingMinutes: MeetingMinute[];
   refreshData: () => Promise<void>;
   createDepartment: (dept: Partial<Department>) => Promise<boolean>;
+  updateDepartment: (id: string, dept: Partial<Department>) => Promise<boolean>;
+  deleteDepartment: (id: string) => Promise<boolean>;
   createIndicator: (ind: Partial<Indicator>) => Promise<boolean>;
+  updateIndicator: (id: string, ind: Partial<Indicator>) => Promise<boolean>;
+  deleteIndicator: (id: string) => Promise<boolean>;
   createActionPlan: (plan: Partial<ActionPlan>) => Promise<boolean>;
+  updateActionPlan: (id: string, plan: Partial<ActionPlan>) => Promise<boolean>;
+  deleteActionPlan: (id: string) => Promise<boolean>;
   createMeeting: (meet: Partial<Meeting>) => Promise<boolean>;
   createMeetingMinute: (minute: Partial<MeetingMinute>) => Promise<boolean>;
   updateActionPlanStatus: (id: string, status: ActionPlan['status'], progress: number) => Promise<boolean>;
@@ -294,9 +300,9 @@ Decidimos que:
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [tenants, setTenants] = useState<Tenant[]>(MOCK_TENANTS);
-  const [currentTenant, setCurrentTenantState] = useState<Tenant | null>(MOCK_TENANTS[0]);
+  const [currentTenant, setCurrentTenantState] = useState<Tenant | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>(MOCK_PROFILES);
-  const [currentProfile, setCurrentProfile] = useState<Profile | null>(MOCK_PROFILES[1]); // Lucas como usuário logado de demonstração
+  const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
 
   // Estados dos dados vinculados ao Tenant ativo
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -311,17 +317,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLoading(true);
 
     try {
-      // 1. Tentar carregar Departments
+      // 1. Tentar carregar Profiles
+      const { data: profData, error: profError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('tenant_id', currentTenant.id);
+
+      let activeProfiles = MOCK_PROFILES.filter(p => p.tenant_id === currentTenant.id);
+      if (!profError && profData && profData.length > 0) {
+        setProfiles(profData);
+        activeProfiles = profData;
+      } else {
+        setProfiles(MOCK_PROFILES);
+      }
+
+      // 2. Tentar carregar Departments
       const { data: deptData, error: deptError } = await supabase
         .from('departments')
         .select('*')
         .eq('tenant_id', currentTenant.id);
 
-      let loadedDepts = [];
       if (!deptError && deptData && deptData.length > 0) {
-        loadedDepts = deptData.map(d => ({
+        const loadedDepts = deptData.map(d => ({
           ...d,
-          manager_name: profiles.find(p => p.id === d.manager_id)?.name || 'Sem responsável'
+          manager_name: activeProfiles.find(p => p.id === d.manager_id)?.name || 'Sem responsável'
         }));
         setDepartments(loadedDepts);
       } else {
@@ -331,10 +350,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           manager_name: MOCK_PROFILES.find(p => p.id === d.manager_id)?.name || 'Sem responsável'
         }));
         setDepartments(mockFilteredDepts);
-        loadedDepts = mockFilteredDepts;
       }
 
-      // 2. Tentar carregar Indicadores
+      // 3. Tentar carregar Indicadores
       const { data: indData, error: indError } = await supabase
         .from('indicators')
         .select('*')
@@ -344,18 +362,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIndicators(indData);
       } else {
         setIndicators(MOCK_INDICATORS.filter(i => i.tenant_id === currentTenant.id));
-      }
-
-      // 3. Tentar carregar Profiles se houver conexão
-      const { data: profData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('tenant_id', currentTenant.id);
-
-      let activeProfiles = profiles;
-      if (profData && profData.length > 0) {
-        setProfiles(profData);
-        activeProfiles = profData;
       }
 
       // 4. Tentar carregar Planos de Ação
@@ -379,24 +385,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       // 5. Reuniões
-      const { data: meetData } = await supabase
+      const { data: meetData, error: meetError } = await supabase
         .from('meetings')
         .select('*')
         .eq('tenant_id', currentTenant.id);
 
-      if (meetData && meetData.length > 0) {
+      if (!meetError && meetData && meetData.length > 0) {
         setMeetings(meetData);
       } else {
         setMeetings(MOCK_MEETINGS.filter(m => m.tenant_id === currentTenant.id));
       }
 
       // 6. Atas
-      const { data: minData } = await supabase
+      const { data: minData, error: minError } = await supabase
         .from('meeting_minutes')
         .select('*')
         .eq('tenant_id', currentTenant.id);
 
-      if (minData && minData.length > 0) {
+      if (!minError && minData && minData.length > 0) {
         setMeetingMinutes(minData);
       } else {
         setMeetingMinutes(MOCK_MINUTES.filter(min => min.tenant_id === currentTenant.id));
@@ -422,20 +428,108 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Carregar dados no boot do app
+  // Sincronizar sessão do usuário e escutar mudanças
   useEffect(() => {
-    refreshData();
+    let activeSubscription: any = null;
+
+    const initAuth = async () => {
+      setLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await handleSessionChange(session);
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          await handleSessionChange(session);
+        });
+        activeSubscription = subscription;
+      } catch (err) {
+        console.error('Erro ao inicializar autenticação:', err);
+        // Fallback para demonstração local em caso de erro na rede ou chaves
+        setCurrentProfile(MOCK_PROFILES[1]); // Lucas
+        setCurrentTenantState(MOCK_TENANTS[0]); // Senda
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+
+    return () => {
+      if (activeSubscription) activeSubscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSessionChange = async (session: any) => {
+    if (session?.user) {
+      // Carregar perfil
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Erro ao carregar perfil do usuário:', profileError);
+        // Tentar fallback se for erro do Supabase
+        setCurrentProfile({
+          id: session.user.id,
+          tenant_id: 't-senda',
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuário Senda',
+          role: 'colaborador'
+        });
+      } else if (profile) {
+        setCurrentProfile(profile);
+      }
+
+      const activeProfile = profile || { tenant_id: 't-senda' };
+
+      // Carregar tenant correspondente
+      const { data: tenant, error: tenantError } = await supabase
+        .from('tenants')
+        .select('*')
+        .eq('id', activeProfile.tenant_id)
+        .single();
+
+      if (tenantError) {
+        console.error('Erro ao carregar tenant:', tenantError);
+        setCurrentTenantState(MOCK_TENANTS[0]);
+      } else if (tenant) {
+        setCurrentTenantState(tenant);
+        
+        // Carregar tenants disponíveis
+        if (profile?.role === 'admin' || profile?.role === 'consultor') {
+          const { data: allTenants } = await supabase.from('tenants').select('*');
+          if (allTenants && allTenants.length > 0) {
+            setTenants(allTenants);
+          } else {
+            setTenants([tenant]);
+          }
+        } else {
+          setTenants([tenant]);
+        }
+      }
+    } else {
+      setCurrentProfile(null);
+      setCurrentTenantState(null);
+      setLoading(false);
+    }
+  };
+
+  // Recarregar dados quando mudar o tenant ativo
+  useEffect(() => {
+    if (currentTenant) {
+      refreshData();
+    }
   }, [currentTenant]);
 
   const setCurrentTenant = (tenant: Tenant) => {
     setCurrentTenantState(tenant);
   };
 
-  // Funções de Escrita no Banco (com fallback local para interações imediatas)
+  // CRUD Departamentos
   const createDepartment = async (dept: Partial<Department>): Promise<boolean> => {
     if (!currentTenant) return false;
     const newDept = {
-      id: dept.id || `d-${Math.random().toString(36).substr(2, 9)}`,
       tenant_id: currentTenant.id,
       name: dept.name || 'Novo Setor',
       parent_id: dept.parent_id || null,
@@ -446,23 +540,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { error } = await supabase.from('departments').insert([newDept]);
       if (error) throw error;
+      await refreshData();
+      return true;
     } catch (err) {
-      console.warn('Salvando departamento localmente no modo demonstração.', err);
+      console.error('Erro ao criar departamento no Supabase:', err);
+      // Fallback local se estiver sem banco
+      const managerName = profiles.find(p => p.id === newDept.manager_id)?.name || 'Sem responsável';
+      setDepartments(prev => [...prev, { ...newDept, id: `d-${Math.random().toString(36).substr(2, 9)}`, manager_name: managerName }]);
+      return true;
     }
-
-    // Atualização local
-    const managerName = profiles.find(p => p.id === newDept.manager_id)?.name || 
-                        profiles.find(p => p.name?.toLowerCase().includes(dept.manager_name?.toLowerCase() || ''))?.name || 
-                        dept.manager_name || 'Sem responsável';
-
-    setDepartments(prev => [...prev, { ...newDept, manager_name: managerName }]);
-    return true;
   };
 
+  const updateDepartment = async (id: string, dept: Partial<Department>): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('departments')
+        .update({
+          name: dept.name,
+          parent_id: dept.parent_id,
+          manager_id: dept.manager_id,
+          code: dept.code
+        })
+        .eq('id', id);
+      if (error) throw error;
+      await refreshData();
+      return true;
+    } catch (err) {
+      console.error('Erro ao atualizar departamento no Supabase:', err);
+      // Fallback local
+      setDepartments(prev => prev.map(d => d.id === id ? { ...d, ...dept, manager_name: profiles.find(p => p.id === dept.manager_id)?.name || d.manager_name } : d));
+      return true;
+    }
+  };
+
+  const deleteDepartment = async (id: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('departments')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      await refreshData();
+      return true;
+    } catch (err) {
+      console.error('Erro ao excluir departamento no Supabase:', err);
+      setDepartments(prev => prev.filter(d => d.id !== id));
+      return true;
+    }
+  };
+
+  // CRUD Indicadores
   const createIndicator = async (ind: Partial<Indicator>): Promise<boolean> => {
     if (!currentTenant) return false;
     const newInd = {
-      id: ind.id || `i-${Math.random().toString(36).substr(2, 9)}`,
       tenant_id: currentTenant.id,
       department_id: ind.department_id || null,
       name: ind.name || 'Novo Indicador',
@@ -476,18 +606,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { error } = await supabase.from('indicators').insert([newInd]);
       if (error) throw error;
+      await refreshData();
+      return true;
     } catch (err) {
-      console.warn('Salvando indicador localmente no modo demonstração.', err);
+      console.error('Erro ao criar indicador no Supabase:', err);
+      setIndicators(prev => [...prev, { ...newInd, id: `i-${Math.random().toString(36).substr(2, 9)}` }]);
+      return true;
     }
-
-    setIndicators(prev => [...prev, newInd]);
-    return true;
   };
 
+  const updateIndicator = async (id: string, ind: Partial<Indicator>): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('indicators')
+        .update({
+          name: ind.name,
+          department_id: ind.department_id,
+          description: ind.description,
+          unit: ind.unit,
+          target: ind.target,
+          year: ind.year,
+          measurements: ind.measurements
+        })
+        .eq('id', id);
+      if (error) throw error;
+      await refreshData();
+      return true;
+    } catch (err) {
+      console.error('Erro ao atualizar indicador no Supabase:', err);
+      setIndicators(prev => prev.map(i => i.id === id ? { ...i, ...ind } : i));
+      return true;
+    }
+  };
+
+  const deleteIndicator = async (id: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('indicators')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      await refreshData();
+      return true;
+    } catch (err) {
+      console.error('Erro ao excluir indicador no Supabase:', err);
+      setIndicators(prev => prev.filter(i => i.id !== id));
+      return true;
+    }
+  };
+
+  // CRUD Planos de Ação
   const createActionPlan = async (plan: Partial<ActionPlan>): Promise<boolean> => {
     if (!currentTenant) return false;
     const newPlan = {
-      id: plan.id || `ap-${Math.random().toString(36).substr(2, 9)}`,
       tenant_id: currentTenant.id,
       department_id: plan.department_id || null,
       name: plan.name || 'Novo Plano de Ação',
@@ -502,21 +673,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { error } = await supabase.from('action_plans').insert([newPlan]);
       if (error) throw error;
+      await refreshData();
+      return true;
     } catch (err) {
-      console.warn('Salvando plano de ação localmente no modo demonstração.', err);
+      console.error('Erro ao criar plano de ação no Supabase:', err);
+      const respName = profiles.find(p => p.id === newPlan.responsible_id)?.name || 'Não atribuído';
+      const appName = profiles.find(p => p.id === newPlan.approver_id)?.name || 'Não atribuído';
+      setActionPlans(prev => [...prev, { ...newPlan, id: `ap-${Math.random().toString(36).substr(2, 9)}`, responsible_name: respName, approver_name: appName }]);
+      return true;
     }
+  };
 
-    const respName = profiles.find(p => p.id === newPlan.responsible_id)?.name || 'Não atribuído';
-    const appName = profiles.find(p => p.id === newPlan.approver_id)?.name || 'Não atribuído';
+  const updateActionPlan = async (id: string, plan: Partial<ActionPlan>): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('action_plans')
+        .update({
+          name: plan.name,
+          description: plan.description,
+          due_date: plan.due_date,
+          responsible_id: plan.responsible_id,
+          approver_id: plan.approver_id,
+          department_id: plan.department_id,
+          status: plan.status,
+          progress: plan.progress
+        })
+        .eq('id', id);
+      if (error) throw error;
+      await refreshData();
+      return true;
+    } catch (err) {
+      console.error('Erro ao atualizar plano de ação no Supabase:', err);
+      setActionPlans(prev => prev.map(p => p.id === id ? { 
+        ...p, 
+        ...plan, 
+        responsible_name: profiles.find(pr => pr.id === plan.responsible_id)?.name || p.responsible_name,
+        approver_name: profiles.find(pr => pr.id === plan.approver_id)?.name || p.approver_name
+      } : p));
+      return true;
+    }
+  };
 
-    setActionPlans(prev => [...prev, { ...newPlan, responsible_name: respName, approver_name: appName }]);
-    return true;
+  const deleteActionPlan = async (id: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('action_plans')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      await refreshData();
+      return true;
+    } catch (err) {
+      console.error('Erro ao excluir plano de ação no Supabase:', err);
+      setActionPlans(prev => prev.filter(p => p.id !== id));
+      return true;
+    }
   };
 
   const createMeeting = async (meet: Partial<Meeting>): Promise<boolean> => {
     if (!currentTenant) return false;
     const newMeet = {
-      id: meet.id || `m-${Math.random().toString(36).substr(2, 9)}`,
       tenant_id: currentTenant.id,
       title: meet.title || 'Nova Reunião',
       description: meet.description || '',
@@ -529,18 +745,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { error } = await supabase.from('meetings').insert([newMeet]);
       if (error) throw error;
+      await refreshData();
+      return true;
     } catch (err) {
-      console.warn('Salvando reunião localmente no modo demonstração.', err);
+      console.error('Erro ao criar reunião no Supabase:', err);
+      setMeetings(prev => [...prev, { ...newMeet, id: `m-${Math.random().toString(36).substr(2, 9)}` }]);
+      return true;
     }
-
-    setMeetings(prev => [...prev, newMeet]);
-    return true;
   };
 
   const createMeetingMinute = async (minute: Partial<MeetingMinute>): Promise<boolean> => {
     if (!currentTenant) return false;
     const newMin = {
-      id: minute.id || `min-${Math.random().toString(36).substr(2, 9)}`,
       tenant_id: currentTenant.id,
       meeting_id: minute.meeting_id || null,
       title: minute.title || 'Nova Ata',
@@ -552,27 +768,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { error } = await supabase.from('meeting_minutes').insert([newMin]);
       if (error) throw error;
+      await refreshData();
+      return true;
     } catch (err) {
-      console.warn('Salvando ata localmente no modo demonstração.', err);
+      console.error('Erro ao criar ata no Supabase:', err);
+      setMeetingMinutes(prev => [...prev, { ...newMin, id: `min-${Math.random().toString(36).substr(2, 9)}` }]);
+      return true;
     }
-
-    setMeetingMinutes(prev => [...prev, newMin]);
-    return true;
   };
 
   const updateActionPlanStatus = async (id: string, status: ActionPlan['status'], progress: number): Promise<boolean> => {
-    try {
-      const { error } = await supabase
-        .from('action_plans')
-        .update({ status, progress })
-        .eq('id', id);
-      if (error) throw error;
-    } catch (err) {
-      console.warn('Atualizando plano de ação localmente.', err);
-    }
-
-    setActionPlans(prev => prev.map(p => p.id === id ? { ...p, status, progress } : p));
-    return true;
+    return updateActionPlan(id, { status, progress });
   };
 
   const updateTenantCulture = async (culture: { mission?: string; vision?: string; values?: string; purpose?: string }): Promise<boolean> => {
@@ -585,13 +791,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .update(culture)
         .eq('id', currentTenant.id);
       if (error) throw error;
+      setCurrentTenantState(updatedTenant);
+      setTenants(prev => prev.map(t => t.id === currentTenant.id ? updatedTenant : t));
+      return true;
     } catch (err) {
-      console.warn('Atualizando cultura do tenant localmente.', err);
+      console.error('Erro ao atualizar cultura do tenant no Supabase:', err);
+      setCurrentTenantState(updatedTenant);
+      setTenants(prev => prev.map(t => t.id === currentTenant.id ? updatedTenant : t));
+      return true;
     }
-
-    setCurrentTenantState(updatedTenant);
-    setTenants(prev => prev.map(t => t.id === currentTenant.id ? updatedTenant : t));
-    return true;
   };
 
   return (
@@ -609,8 +817,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       meetingMinutes,
       refreshData,
       createDepartment,
+      updateDepartment,
+      deleteDepartment,
       createIndicator,
+      updateIndicator,
+      deleteIndicator,
       createActionPlan,
+      updateActionPlan,
+      deleteActionPlan,
       createMeeting,
       createMeetingMinute,
       updateActionPlanStatus,

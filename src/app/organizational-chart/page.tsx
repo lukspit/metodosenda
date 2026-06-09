@@ -13,7 +13,10 @@ import {
   Sparkles,
   GitPullRequest,
   User,
-  Info
+  Info,
+  Edit2,
+  X,
+  Loader2
 } from 'lucide-react';
 import {
   ReactFlow,
@@ -36,7 +39,8 @@ const CustomNode: React.FC<NodeProps> = ({ data }) => {
   const isRoot = !!data.isRoot;
   const managerName = (data.managerName as string) || '';
   const deptName = (data.label as string) || '';
-
+  const onEdit = (data as any).onEdit as (() => void) | undefined;
+  const onDelete = (data as any).onDelete as (() => void) | undefined;
 
   return (
     <div className={`min-w-[190px] rounded-md shadow-lg border bg-white transition-all hover:scale-105 duration-200 overflow-hidden ${
@@ -59,8 +63,25 @@ const CustomNode: React.FC<NodeProps> = ({ data }) => {
           ? 'bg-[#1E2538] text-white border-[#C5A85A]/30' 
           : 'bg-slate-50 text-slate-850 border-slate-100'
       }`}>
-        <span className="font-bold text-xs truncate max-w-[140px] uppercase tracking-wider">{deptName}</span>
-        {isRoot && <Compass className="w-3.5 h-3.5 text-[#C5A85A] shrink-0" />}
+        <span className="font-bold text-xs truncate max-w-[100px] uppercase tracking-wider">{deptName}</span>
+        <div className="flex items-center gap-1 shrink-0">
+          <button 
+            onClick={(e) => { e.stopPropagation(); onEdit && onEdit(); }}
+            className={`p-1 rounded hover:bg-slate-200/50 transition-colors ${isRoot ? 'hover:bg-slate-700/50 text-[#C5A85A]' : 'text-slate-500 hover:text-slate-800'}`}
+            title="Editar setor"
+          >
+            <Edit2 className="w-3 h-3" />
+          </button>
+          {!isRoot && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onDelete && onDelete(); }}
+              className="p-1 rounded hover:bg-rose-500/20 text-rose-500 transition-colors"
+              title="Excluir setor"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Corpo do Bloco (Responsável) */}
@@ -87,13 +108,98 @@ const CustomNode: React.FC<NodeProps> = ({ data }) => {
 };
 
 export default function OrganizationalChart() {
-  const { departments, profiles, createDepartment, refreshData } = useApp();
+  const { 
+    departments, 
+    profiles, 
+    createDepartment, 
+    updateDepartment, 
+    deleteDepartment, 
+    refreshData 
+  } = useApp();
+  
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [aiFeedback, setAiFeedback] = useState<string | null>(null);
 
+  // Estados dos Modais
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDept, setSelectedDept] = useState<Department | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
+
+  // Campos do Formulário do Modal
+  const [deptName, setDeptName] = useState('');
+  const [deptManagerId, setDeptManagerId] = useState('');
+  const [deptParentId, setDeptParentId] = useState('');
+
   // Mapeamento dos tipos personalizados de nós no React Flow
   const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
+
+  // Handlers de Clique
+  const handleEditClick = (dept: Department) => {
+    setSelectedDept(dept);
+    setDeptName(dept.name);
+    setDeptManagerId(dept.manager_id || '');
+    setDeptParentId(dept.parent_id || '');
+    setIsModalOpen(true);
+  };
+
+  const handleCreateClick = () => {
+    setSelectedDept(null);
+    setDeptName('');
+    setDeptManagerId('');
+    
+    // Tenta sugerir o primeiro setor como pai
+    const root = departments.find(d => d.parent_id === null) || departments[0];
+    setDeptParentId(root ? root.id : '');
+    
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteClick = async (id: string, name: string) => {
+    const confirm = window.confirm(`Tem certeza que deseja excluir o setor "${name}"? Todos os subsetores e planos de ação associados a ele perderão o vínculo.`);
+    if (confirm) {
+      const success = await deleteDepartment(id);
+      if (success) {
+        setAiFeedback(`Setor "${name}" excluído com sucesso.`);
+        setTimeout(() => setAiFeedback(null), 5000);
+      }
+    }
+  };
+
+  // Salvar Form (Criar ou Editar)
+  const handleSaveDepartment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deptName.trim()) return;
+
+    setModalLoading(true);
+    let success = false;
+
+    if (selectedDept) {
+      // Editar
+      success = await updateDepartment(selectedDept.id, {
+        name: deptName,
+        manager_id: deptManagerId || null,
+        parent_id: deptParentId || null
+      });
+    } else {
+      // Criar
+      success = await createDepartment({
+        name: deptName,
+        manager_id: deptManagerId || null,
+        parent_id: deptParentId || null
+      });
+    }
+
+    setModalLoading(false);
+    if (success) {
+      setIsModalOpen(false);
+      setSelectedDept(null);
+      setAiFeedback(selectedDept ? 'Setor atualizado com sucesso!' : 'Novo setor cadastrado com sucesso!');
+      setTimeout(() => setAiFeedback(null), 5000);
+    } else {
+      alert('Ocorreu um erro ao salvar o departamento. Tente novamente.');
+    }
+  };
 
   // Algoritmo simples de árvore para posicionar os nós
   const buildHierarchy = useCallback(() => {
@@ -128,7 +234,9 @@ export default function OrganizationalChart() {
         data: { 
           label: dept.name, 
           managerName: dept.manager_name || 'Sem gestor',
-          isRoot
+          isRoot,
+          onEdit: () => handleEditClick(dept),
+          onDelete: () => handleDeleteClick(dept.id, dept.name)
         },
       });
 
@@ -205,6 +313,12 @@ export default function OrganizationalChart() {
     }
   };
 
+  // Filtrar lista de setores para pai: não pode ser ele mesmo!
+  const parentOptions = useMemo(() => {
+    if (!selectedDept) return departments;
+    return departments.filter(d => d.id !== selectedDept.id);
+  }, [departments, selectedDept]);
+
   const suggestions = [
     'Criar o setor de Suporte abaixo de TI liderado pelo João',
     'Adicionar departamento de Marketing abaixo do Comercial',
@@ -220,10 +334,20 @@ export default function OrganizationalChart() {
           <p className="text-sm text-slate-500 mt-1">Organograma completo dos setores e responsáveis hierárquicos.</p>
         </div>
 
-        {/* Informações Rápidas */}
-        <div className="flex items-center gap-3 text-xs bg-slate-100 text-slate-650 px-4 py-2 rounded-md border border-slate-200/40">
-          <GitPullRequest className="w-4 h-4 text-[#C5A85A]" />
-          <span>Total de Setores: <strong>{departments.length}</strong></span>
+        {/* Informações Rápidas & Botão Novo */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-xs bg-slate-100 text-slate-650 px-4 py-2 rounded-md border border-slate-200/40">
+            <GitPullRequest className="w-4 h-4 text-[#C5A85A]" />
+            <span>Total de Setores: <strong>{departments.length}</strong></span>
+          </div>
+          
+          <button
+            onClick={handleCreateClick}
+            className="flex items-center gap-2 bg-[#1E2538] hover:bg-[#2c3752] text-white text-xs font-semibold px-4 py-2 rounded-md shadow transition-colors"
+          >
+            <Plus className="w-4 h-4 text-[#C5A85A]" />
+            Novo Setor
+          </button>
         </div>
       </div>
 
@@ -242,7 +366,7 @@ export default function OrganizationalChart() {
       {aiFeedback && (
         <div className="bg-[#C5A85A]/10 border border-[#C5A85A]/35 text-[#C5A85A] px-4 py-3 rounded-md flex items-center gap-2 text-xs font-semibold shrink-0 animate-fadeIn">
           <Sparkles className="w-4 h-4 fill-[#C5A85A]/20" />
-          <span>IA: {aiFeedback}</span>
+          <span>Feedback: {aiFeedback}</span>
         </div>
       )}
 
@@ -277,10 +401,120 @@ export default function OrganizationalChart() {
           </ReactFlow>
         ) : (
           <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-            Nenhum departamento cadastrado. Crie um setor raiz usando a barra de IA acima.
+            Nenhum departamento cadastrado. Crie um setor raiz usando o botão "+ Novo Setor".
           </div>
         )}
       </div>
+
+      {/* Modal Premium de Edição / Criação */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto font-sans animate-scaleUp">
+            
+            {/* Header do Modal */}
+            <div className="flex items-center justify-between px-6 py-4 bg-[#1E2538] text-white rounded-t-lg">
+              <div className="flex items-center gap-2">
+                <GitPullRequest className="w-5 h-5 text-[#C5A85A]" />
+                <h3 className="font-bold text-sm uppercase tracking-wider">
+                  {selectedDept ? 'Editar Departamento' : 'Novo Departamento'}
+                </h3>
+              </div>
+              <button 
+                onClick={() => { setIsModalOpen(false); setSelectedDept(null); }}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Formulário */}
+            <form onSubmit={handleSaveDepartment} className="p-6 space-y-4 text-left">
+              <div>
+                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">
+                  Nome do Setor *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={deptName}
+                  onChange={e => setDeptName(e.target.value)}
+                  placeholder="Ex: Comercial, Marketing, Suporte"
+                  className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">
+                  Gestor Responsável
+                </label>
+                <select
+                  value={deptManagerId}
+                  onChange={e => setDeptManagerId(e.target.value)}
+                  className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A]"
+                >
+                  <option value="">Nenhum gestor selecionado</option>
+                  {profiles.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Só exibe setor pai se não for o nó raiz */}
+              {(!selectedDept || selectedDept.parent_id !== null) && departments.length > 0 && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">
+                    Setor Pai (Superior Hierárquico)
+                  </label>
+                  <select
+                    value={deptParentId}
+                    onChange={e => setDeptParentId(e.target.value)}
+                    required
+                    className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#C5A85A] focus:border-[#C5A85A]"
+                  >
+                    <option value="">Sem hierarquia superior (Será Raiz)</option>
+                    {parentOptions.map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[9px] text-slate-400 mt-1">
+                    Define qual setor está acima deste no organograma.
+                  </p>
+                </div>
+              )}
+
+              {/* Botões do Rodapé */}
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => { setIsModalOpen(false); setSelectedDept(null); }}
+                  className="px-4 py-2 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors text-xs font-semibold text-slate-500"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={modalLoading || !deptName.trim()}
+                  className="bg-[#1E2538] hover:bg-[#2c3752] text-white disabled:opacity-40 font-semibold py-2 px-5 rounded-md shadow transition-colors flex items-center gap-1.5 text-xs"
+                >
+                  {modalLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C5A85A]" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar Alterações'
+                  )}
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
