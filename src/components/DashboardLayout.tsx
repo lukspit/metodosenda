@@ -20,7 +20,8 @@ import {
   Users, 
   Layers,
   ChevronUp,
-  LogOut
+  LogOut,
+  Briefcase
 } from 'lucide-react';
 
 export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -50,6 +51,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
     { name: 'Planos de ação', path: '/action-plans', icon: Target },
     { name: 'Atas', path: '/minutes', icon: FileText },
     { name: 'Agenda', path: '/calendar', icon: Calendar },
+    { name: 'Ferramentas', path: '/tools', icon: Briefcase },
   ];
 
   const secondaryMenuItems = [
@@ -431,31 +433,44 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             </div>
 
             {/* Menus Secundários */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               <Link
                 href="/organizational-chart"
                 onClick={() => setShowMoreMenu(false)}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
+                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
                   pathname === '/organizational-chart' 
                     ? 'border-[#C5A85A] text-[#C5A85A] bg-[#C5A85A]/5' 
                     : 'border-slate-800 text-slate-300 bg-[#161B29]/50 hover:bg-slate-800'
                 }`}
               >
-                <GitBranch className="w-6 h-6 mb-1.5" />
-                <span className="text-xs text-center font-medium">Organograma</span>
+                <GitBranch className="w-5 h-5 mb-1" />
+                <span className="text-[10px] text-center font-medium truncate w-full">Organograma</span>
               </Link>
 
               <Link
                 href="/minutes"
                 onClick={() => setShowMoreMenu(false)}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
+                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
                   pathname === '/minutes' 
                     ? 'border-[#C5A85A] text-[#C5A85A] bg-[#C5A85A]/5' 
                     : 'border-slate-800 text-slate-300 bg-[#161B29]/50 hover:bg-slate-800'
                 }`}
               >
-                <FileText className="w-6 h-6 mb-1.5" />
-                <span className="text-xs text-center font-medium">Atas</span>
+                <FileText className="w-5 h-5 mb-1" />
+                <span className="text-[10px] text-center font-medium truncate w-full">Atas</span>
+              </Link>
+
+              <Link
+                href="/tools"
+                onClick={() => setShowMoreMenu(false)}
+                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                  pathname === '/tools' 
+                    ? 'border-[#C5A85A] text-[#C5A85A] bg-[#C5A85A]/5' 
+                    : 'border-slate-800 text-slate-300 bg-[#161B29]/50 hover:bg-slate-800'
+                }`}
+              >
+                <Briefcase className="w-5 h-5 mb-1" />
+                <span className="text-[10px] text-center font-medium truncate w-full">Ferramentas</span>
               </Link>
             </div>
 
