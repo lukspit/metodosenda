@@ -16,7 +16,7 @@ import {
   ChevronDown, 
   Maximize2, 
   Compass, 
-  Heart, 
+  Award, 
   Users, 
   Layers,
   ChevronUp,
@@ -198,13 +198,13 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             {/* Cultura Organizacional retrátil */}
             <button
               onClick={() => setShowCulture(!showCulture)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
                 showCulture 
                   ? 'bg-[#C5A85A] border-[#C5A85A] text-[#1E2538] shadow-md' 
                   : 'bg-[#C5A85A]/10 border-[#C5A85A]/20 text-[#C5A85A] hover:bg-[#C5A85A]/20'
               }`}
             >
-              <Heart className={`w-3.5 h-3.5 ${showCulture ? 'fill-[#1E2538]' : ''}`} />
+              <Compass className="w-3.5 h-3.5" />
               Cultura Organizacional
               {showCulture ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
@@ -289,7 +289,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             </div>
             <div className="bg-slate-800/40 rounded-md p-4 border border-slate-700/50">
               <h4 className="text-xs font-bold text-[#C5A85A] uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                <Heart className="w-4 h-4" /> Valores
+                <Award className="w-4 h-4" /> Valores
               </h4>
               <p className="text-xs text-slate-300 leading-relaxed font-light whitespace-pre-line">
                 {currentTenant.values || 'Não cadastrado'}

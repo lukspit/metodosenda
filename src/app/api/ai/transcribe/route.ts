@@ -39,9 +39,44 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log(`Enviando áudio para transcrição no OpenRouter. Formato deduzido: ${format}`);
+    console.log(`[Transcribe] Iniciando transcrição com Whisper-large-v3. Formato: ${format}`);
 
-    const response = await fetch('https://openrouter.ai/api/v1/audio/transcriptions', {
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openRouterApiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://pillar.io',
+          'X-Title': 'Metodo Senda Core',
+        },
+        body: JSON.stringify({
+          model: 'openai/whisper-large-v3',
+          input_audio: {
+            data: base64Data,
+            format: format,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.text || '';
+        console.log(`[Transcribe] Sucesso com Whisper. Texto transcrito: "${text}"`);
+        return NextResponse.json({ text });
+      }
+
+      const errorText = await response.text();
+      console.warn(`[Transcribe] Erro no Whisper (status ${response.status}): ${errorText}. Tentando fallback com Gemini...`);
+    } catch (whisperErr: any) {
+      console.warn(`[Transcribe] Falha de conexão com Whisper: ${whisperErr.message}. Tentando fallback com Gemini...`);
+    }
+
+    // FALLBACK: Usar o Gemini 2.5 Flash multimodal para extrair o texto do áudio
+    console.log(`[Transcribe] Executando fallback com Gemini 2.5 Flash...`);
+    const model = process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash';
+
+    const fallbackResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openRouterApiKey}`,
@@ -50,26 +85,43 @@ export async function POST(req: NextRequest) {
         'X-Title': 'Metodo Senda Core',
       },
       body: JSON.stringify({
-        model: 'openai/whisper-large-v3',
-        input_audio: {
-          data: base64Data,
-          format: format,
-        },
+        model: model,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Transcreva o áudio a seguir exatamente como foi falado, em português do Brasil. Retorne APENAS a transcrição pura, sem aspas, sem explicações, introduções ou notas extras. Se o áudio estiver completamente silencioso ou sem fala compreensível, retorne uma string vazia.'
+              },
+              {
+                type: 'input_audio',
+                input_audio: {
+                  data: base64Data,
+                  format: format,
+                }
+              }
+            ]
+          }
+        ],
+        temperature: 0.0
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erro na resposta do OpenRouter para transcrição:', errorText);
-      return NextResponse.json({ error: 'Falha ao transcrever o áudio no servidor da IA.' }, { status: 500 });
+    if (!fallbackResponse.ok) {
+      const errorText = await fallbackResponse.text();
+      console.error('[Transcribe] Falha no fallback com Gemini:', errorText);
+      return NextResponse.json({ 
+        error: 'Falha ao transcrever o áudio no servidor da IA (Whisper e Gemini falharam).',
+        details: errorText
+      }, { status: 500 });
     }
 
-    const data = await response.json();
-    
-    // O retorno padrão do OpenAI/OpenRouter transcrições costuma ser { text: "..." }
-    const text = data.text || '';
+    const fallbackData = await fallbackResponse.json();
+    const text = fallbackData.choices?.[0]?.message?.content || '';
+    console.log(`[Transcribe] Sucesso com Gemini. Texto transcrito: "${text}"`);
 
-    return NextResponse.json({ text });
+    return NextResponse.json({ text: text.trim() });
 
   } catch (error: any) {
     console.error('Erro na rota /api/ai/transcribe:', error);
