@@ -10,33 +10,7 @@ import React from 'react';
 export function SkeletonDashboard() {
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* Shimmer keyframe - inline para não depender de globals.css */}
-      <style>{`
-        @keyframes skeletonShimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        .skeleton-pulse {
-          background: linear-gradient(
-            90deg,
-            rgba(226, 232, 240, 0.6) 25%,
-            rgba(241, 245, 249, 0.9) 37%,
-            rgba(226, 232, 240, 0.6) 63%
-          );
-          background-size: 200% 100%;
-          animation: skeletonShimmer 1.5s ease-in-out infinite;
-        }
-        .skeleton-pulse-dark {
-          background: linear-gradient(
-            90deg,
-            rgba(30, 37, 56, 1) 25%,
-            rgba(44, 55, 82, 0.9) 37%,
-            rgba(30, 37, 56, 1) 63%
-          );
-          background-size: 200% 100%;
-          animation: skeletonShimmer 1.5s ease-in-out infinite;
-        }
-      `}</style>
+
 
       {/* Cabeçalho Skeleton */}
       <div>
