@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useApp, ActionPlan, safeGetLocalStorage } from '../context/AppContext';
+import { useApp, ActionPlan } from '../context/AppContext';
 
 import { 
   TrendingUp, 
@@ -67,7 +67,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (currentTenant) {
-      const saved = currentTenant.dashboard_insights || safeGetLocalStorage(`insights-${currentTenant.id}`);
+      const saved = currentTenant.dashboard_insights;
       if (saved) {
         setAiInsight(saved);
       } else {
@@ -109,7 +109,7 @@ export default function Dashboard() {
       }
     } catch (err) {
       console.error(err);
-      const saved = currentTenant.dashboard_insights || safeGetLocalStorage(`insights-${currentTenant.id}`);
+      const saved = currentTenant.dashboard_insights;
       if (saved) {
         setAiInsight(saved + '<p class="text-amber-500 text-[10px] mt-2">Nota: Conexão offline. Exibindo diagnóstico salvo anteriormente.</p>');
       } else {

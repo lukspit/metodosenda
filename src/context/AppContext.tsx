@@ -62,27 +62,6 @@ export interface Indicator {
   measurements: IndicatorMeasurement[];
 }
 
-export const safeGetLocalStorage = (key: string): string | null => {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      return localStorage.getItem(key);
-    }
-  } catch (e) {
-    console.warn('Erro ao ler do localStorage:', e);
-  }
-  return null;
-};
-
-export const safeSetLocalStorage = (key: string, value: string): void => {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem(key, value);
-    }
-  } catch (e) {
-    console.warn('Erro ao gravar no localStorage:', e);
-  }
-};
-
 export function evaluateFormula(formula: string, variables: Record<string, number>): number {
   if (!formula) return 0;
   
@@ -566,11 +545,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Fallback para demonstração local em caso de erro na rede ou chaves
         setCurrentProfile(MOCK_PROFILES[1]); // Lucas
         const demoTenant = MOCK_TENANTS[0];
-        const localInsights = safeGetLocalStorage(`insights-${demoTenant.id}`);
-        setCurrentTenantState({
-          ...demoTenant,
-          dashboard_insights: demoTenant.dashboard_insights || localInsights || undefined
-        });
+        setCurrentTenantState(demoTenant);
         setLoading(false);
       }
     };
@@ -617,17 +592,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (tenantError) {
         console.error('Erro ao carregar tenant:', tenantError);
         const demoTenant = MOCK_TENANTS[0];
-        const localInsights = safeGetLocalStorage(`insights-${demoTenant.id}`);
-        setCurrentTenantState({
-          ...demoTenant,
-          dashboard_insights: demoTenant.dashboard_insights || localInsights || undefined
-        });
+        setCurrentTenantState(demoTenant);
       } else if (tenant) {
-        const localInsights = safeGetLocalStorage(`insights-${tenant.id}`);
-        setCurrentTenantState({
-          ...tenant,
-          dashboard_insights: tenant.dashboard_insights || localInsights || undefined
-        });
+        setCurrentTenantState(tenant);
         
         // Carregar tenants disponíveis
         if (profile?.role === 'admin' || profile?.role === 'consultor') {
@@ -983,8 +950,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!currentTenant) return false;
     const updatedTenant = { ...currentTenant, dashboard_insights: insightsText };
 
-    // Salvar no localStorage como backup offline imediato
-    safeSetLocalStorage(`insights-${currentTenant.id}`, insightsText);
+    // Salvar no banco de dados remoto
 
     try {
       const { error } = await supabase
