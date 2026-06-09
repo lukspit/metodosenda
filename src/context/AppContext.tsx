@@ -610,15 +610,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } else if (tenant) {
         setCurrentTenantState(tenant);
         
-        // Carregar tenants disponíveis
-        if (profile?.role === 'admin' || profile?.role === 'consultor') {
-          const { data: allTenants } = await supabase.from('tenants').select('*');
-          if (allTenants && allTenants.length > 0) {
-            setTenants(allTenants);
+        // Carregar tenants disponíveis com controle estrito de acesso e isolamento
+        let isSendaTenant = false;
+        try {
+          const { data: sendaTenant } = await supabase
+            .from('tenants')
+            .select('id')
+            .eq('name', 'Senda Consultoria')
+            .maybeSingle();
+            
+          isSendaTenant = sendaTenant ? (activeProfile.tenant_id === sendaTenant.id) : (activeProfile.tenant_id === 't-senda');
+        } catch (e) {
+          isSendaTenant = activeProfile.tenant_id === 't-senda';
+        }
+
+        if (isSendaTenant && (profile?.role === 'admin' || profile?.role === 'consultor')) {
+          if (profile.role === 'admin') {
+            // Admins da Senda Consultoria têm acesso a todos os tenants
+            const { data: allTenants } = await supabase.from('tenants').select('*');
+            if (allTenants && allTenants.length > 0) {
+              setTenants(allTenants);
+            } else {
+              setTenants([tenant]);
+            }
           } else {
-            setTenants([tenant]);
+            // Consultores da Senda Consultoria veem apenas as vinculadas na user_tenants + a própria Senda
+            const { data: userTenantsData } = await supabase
+              .from('user_tenants')
+              .select('tenant_id')
+              .eq('user_id', profile.id);
+            
+            const associatedIds = (userTenantsData || []).map(ut => ut.tenant_id);
+            if (activeProfile.tenant_id) {
+              associatedIds.push(activeProfile.tenant_id); // Incluir o próprio tenant da Senda
+            }
+
+            const { data: clientTenants } = await supabase
+              .from('tenants')
+              .select('*')
+              .in('id', associatedIds);
+
+            if (clientTenants && clientTenants.length > 0) {
+              setTenants(clientTenants);
+            } else {
+              setTenants([tenant]);
+            }
           }
         } else {
+          // Membros de outras empresas clientes só veem seu próprio tenant
           setTenants([tenant]);
         }
       }

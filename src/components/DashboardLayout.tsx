@@ -214,16 +214,23 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             
             {/* Seletor de Tenant */}
             <div className="relative">
-              <button
-                onClick={() => setShowTenantDropdown(!showTenantDropdown)}
-                className="flex items-center gap-2 bg-slate-800/40 border border-slate-700 px-4 py-1.5 rounded-lg text-sm text-slate-200 font-medium hover:bg-slate-800/80 transition-all"
-              >
-                <Layers className="w-4 h-4 text-[#C5A85A]" />
-                {currentTenant?.name || 'Carregando...'}
-                <ChevronDown className="w-4 h-4 text-slate-400" />
-              </button>
+              {tenants && tenants.length > 1 ? (
+                <button
+                  onClick={() => setShowTenantDropdown(!showTenantDropdown)}
+                  className="flex items-center gap-2 bg-slate-800/40 border border-slate-700 px-4 py-1.5 rounded-lg text-sm text-slate-200 font-medium hover:bg-slate-800/80 transition-all cursor-pointer"
+                >
+                  <Layers className="w-4 h-4 text-[#C5A85A]" />
+                  {currentTenant?.name || 'Carregando...'}
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 bg-slate-800/10 border border-slate-800/30 px-4 py-1.5 rounded-lg text-sm text-slate-400 font-medium select-none">
+                  <Layers className="w-4 h-4 text-slate-500" />
+                  {currentTenant?.name || 'Carregando...'}
+                </div>
+              )}
 
-              {showTenantDropdown && (
+              {tenants && tenants.length > 1 && showTenantDropdown && (
                 <div className="absolute right-0 mt-2 w-56 bg-[#1E2538] border border-slate-800 rounded-lg shadow-xl py-1 z-50">
                   <p className="text-[10px] text-slate-450 font-bold tracking-wider uppercase px-3 py-1.5">Mudar Empresa</p>
                   {(tenants || []).map(t => (
@@ -233,7 +240,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                         setCurrentTenant(t);
                         setShowTenantDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-800 flex items-center justify-between ${
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-800 flex items-center justify-between cursor-pointer ${
                         currentTenant?.id === t.id ? 'text-[#C5A85A] font-semibold bg-[#C5A85A]/5' : 'text-slate-350'
                       }`}
                     >
