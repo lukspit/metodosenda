@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useApp, ActionPlan } from '../context/AppContext';
+import { useApp, ActionPlan, safeGetLocalStorage } from '../context/AppContext';
 
 import { 
   TrendingUp, 
@@ -67,12 +67,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (currentTenant) {
-      let saved = null;
-      try {
-        saved = currentTenant.dashboard_insights || (typeof window !== 'undefined' ? localStorage.getItem(`insights-${currentTenant.id}`) : null);
-      } catch (e) {
-        console.warn('Erro ao acessar localStorage no dashboard:', e);
-      }
+      const saved = currentTenant.dashboard_insights || safeGetLocalStorage(`insights-${currentTenant.id}`);
       if (saved) {
         setAiInsight(saved);
       } else {
@@ -114,12 +109,7 @@ export default function Dashboard() {
       }
     } catch (err) {
       console.error(err);
-      let saved = null;
-      try {
-        saved = currentTenant.dashboard_insights || (typeof window !== 'undefined' ? localStorage.getItem(`insights-${currentTenant.id}`) : null);
-      } catch (e) {
-        console.warn('Erro ao acessar localStorage no catch de insights:', e);
-      }
+      const saved = currentTenant.dashboard_insights || safeGetLocalStorage(`insights-${currentTenant.id}`);
       if (saved) {
         setAiInsight(saved + '<p class="text-amber-500 text-[10px] mt-2">Nota: Conexão offline. Exibindo diagnóstico salvo anteriormente.</p>');
       } else {
