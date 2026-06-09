@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useApp, Department } from '../../context/AppContext';
 import { SmartInput } from '../../components/SmartInput';
+import { SkeletonOrgChart } from '../../components/SkeletonOrgChart';
 import { 
   Compass, 
   Plus, 
@@ -114,7 +115,8 @@ export default function OrganizationalChart() {
     createDepartment, 
     updateDepartment, 
     deleteDepartment, 
-    refreshData 
+    refreshData,
+    loading 
   } = useApp();
   
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -390,7 +392,9 @@ export default function OrganizationalChart() {
           Use o scroll do mouse para Zoom, ou arraste a tela para navegar.
         </div>
 
-        {departments.length > 0 ? (
+        {loading ? (
+          <SkeletonOrgChart />
+        ) : departments.length > 0 ? (
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -414,7 +418,7 @@ export default function OrganizationalChart() {
           </ReactFlow>
         ) : (
           <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-            Nenhum departamento cadastrado. Crie um setor raiz usando o botão "+ Novo Setor".
+            Nenhum departamento cadastrado. Crie um setor raiz usando o botão &quot;+ Novo Setor&quot;.
           </div>
         )}
       </div>

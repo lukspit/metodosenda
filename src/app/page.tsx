@@ -23,6 +23,7 @@ import {
   Tooltip, 
   CartesianGrid 
 } from 'recharts';
+import { SkeletonDashboard } from '../components/SkeletonDashboard';
 
 export default function Dashboard() {
   const { currentTenant, indicators, actionPlans, loading } = useApp();
@@ -91,11 +92,7 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <RefreshCw className="w-8 h-8 text-[#C5A85A] animate-spin" />
-      </div>
-    );
+    return <SkeletonDashboard />;
   }
 
   // Cálculos rápidos de métricas
