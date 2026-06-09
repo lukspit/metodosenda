@@ -144,16 +144,13 @@ export default function LoginPage() {
       </div>
 
       {/* Coluna da Direita: Imagem de fundo com frase de Vicente Falconi */}
-      <div className="hidden md:block md:w-[58%] lg:w-[64%] relative z-10">
+      <div className="hidden md:block md:w-[58%] lg:w-[64%] relative z-10 bg-[#111622]">
         <div 
-          className="absolute inset-0 bg-cover"
+          className="absolute inset-0 bg-contain bg-center bg-no-repeat"
           style={{ 
-            backgroundImage: `url('/login_bg.webp')`,
-            backgroundPosition: 'center bottom'
+            backgroundImage: `url('/login_bg.webp')`
           }}
         />
-        {/* Efeito degradê suave para integrar a imagem com o fundo da esquerda */}
-        <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[#EEF2F6] to-transparent pointer-events-none" />
       </div>
     </div>
   );
