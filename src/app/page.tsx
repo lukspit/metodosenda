@@ -13,7 +13,9 @@ import {
   RefreshCw, 
   ArrowRight,
   TrendingDown,
-  CalendarDays
+  CalendarDays,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 import { SkeletonDashboard } from '../components/SkeletonDashboard';
@@ -111,6 +113,7 @@ export default function Dashboard() {
   const { currentTenant, indicators, actionPlans, loading, saveDashboardInsights } = useApp();
   const [aiInsight, setAiInsight] = useState<string>('');
   const [loadingInsight, setLoadingInsight] = useState(false);
+  const [insightsExpanded, setInsightsExpanded] = useState(false);
 
   // Fallbacks de segurança para arrays e objetos
   const safeIndicators = useMemo(() => indicators || [], [indicators]);
@@ -347,39 +350,59 @@ export default function Dashboard() {
         {/* Diagnóstico por IA (Senda AI) - Horizontal de Largura Inteira */}
         <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-slate-200/60 relative overflow-hidden group">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-xs text-slate-800 font-bold tracking-wider uppercase">
-                <Sparkles className="w-4 h-4 animate-pulse text-slate-400" /> Senda AI Insights
+            <div 
+              className="flex items-center justify-between cursor-pointer select-none"
+              onClick={() => setInsightsExpanded(!insightsExpanded)}
+            >
+              <span className="flex items-center gap-2.5 text-sm text-slate-800 font-extrabold tracking-wider uppercase">
+                <Sparkles className="w-5 h-5 animate-pulse text-slate-500" /> Senda AI Insights
               </span>
-              <button 
-                onClick={generateRealInsights}
-                disabled={loadingInsight}
-                className="p-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 rounded-lg text-slate-500 hover:text-slate-800 transition-all active:scale-95 cursor-pointer"
-                title="Atualizar insights com IA real"
-              >
-                <RefreshCw className={`w-4 h-4 ${loadingInsight ? 'animate-spin text-[#C5A85A]' : ''}`} />
-              </button>
+              <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setInsightsExpanded(!insightsExpanded)}
+                  className="p-1 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                  title={insightsExpanded ? "Recolher insights" : "Expandir insights"}
+                >
+                  {insightsExpanded ? (
+                    <ChevronUp className="w-5 h-5" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5" />
+                  )}
+                </button>
+                <button 
+                  onClick={generateRealInsights}
+                  disabled={loadingInsight}
+                  className="p-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 rounded-lg text-slate-500 hover:text-slate-800 transition-all active:scale-95 cursor-pointer"
+                  title="Atualizar insights com IA real"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loadingInsight ? 'animate-spin text-[#C5A85A]' : ''}`} />
+                </button>
+              </div>
             </div>
 
-            {loadingInsight ? (
-              <div className="space-y-3 py-6">
-                <div className="h-4 bg-slate-200/60 rounded animate-pulse w-3/4" />
-                <div className="h-4 bg-slate-200/60 rounded animate-pulse w-5/6" />
-                <div className="h-4 bg-slate-200/60 rounded animate-pulse w-2/3" />
-                <div className="h-4 bg-slate-200/60 rounded animate-pulse w-1/2" />
-                <p className="text-[10px] text-slate-400 text-center animate-pulse pt-2">Lendo banco de dados e formulando estratégias...</p>
-              </div>
-            ) : (
-              <div 
-                className="max-w-none text-slate-700 space-y-3"
-                dangerouslySetInnerHTML={{ __html: aiInsight }}
-              />
-            )}
-          </div>
+            {insightsExpanded && (
+              <div className="space-y-4 pt-2 border-t border-slate-100 animate-fadeIn">
+                {loadingInsight ? (
+                  <div className="space-y-3 py-6">
+                    <div className="h-4 bg-slate-200/60 rounded animate-pulse w-3/4" />
+                    <div className="h-4 bg-slate-200/60 rounded animate-pulse w-5/6" />
+                    <div className="h-4 bg-slate-200/60 rounded animate-pulse w-2/3" />
+                    <div className="h-4 bg-slate-200/60 rounded animate-pulse w-1/2" />
+                    <p className="text-[10px] text-slate-400 text-center animate-pulse pt-2">Lendo banco de dados e formulando estratégias...</p>
+                  </div>
+                ) : (
+                  <div 
+                    className="max-w-none text-slate-700 space-y-3 text-sm"
+                    dangerouslySetInnerHTML={{ __html: aiInsight }}
+                  />
+                )}
 
-          <div className="mt-6 pt-4 border-t border-slate-150 flex items-center justify-between text-[10px] text-slate-400">
-            <span>Os insights são baseados no método estratégico da Senda Consultoria.</span>
-            <span className="font-semibold text-slate-400">Use o botão no topo para atualizar</span>
+                <div className="pt-4 border-t border-slate-150 flex items-center justify-between text-[10px] text-slate-400">
+                  <span>Os insights são baseados no método estratégico da Senda Consultoria.</span>
+                  <span className="font-semibold text-slate-400">Use o botão no topo para atualizar</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
