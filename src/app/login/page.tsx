@@ -151,8 +151,8 @@ export default function LoginPage() {
             backgroundImage: `url('/login_bg.webp')`
           }}
         />
-        {/* Degradê de Transição entre a parte branca/cinza claro da esquerda (#EEF2F6) e o azul escuro (#021730) */}
-        <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-[#EEF2F6] to-[#021730] pointer-events-none z-20" />
+        {/* Degradê Curto, Forte e Concentrado na Junção (from-[#EEF2F6] to-transparent) */}
+        <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-[#EEF2F6] via-[#EEF2F6]/70 to-transparent pointer-events-none z-20" />
       </div>
     </div>
   );
