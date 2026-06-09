@@ -148,7 +148,7 @@ export default function LoginPage() {
         <div 
           className="absolute inset-0 bg-cover"
           style={{ 
-            backgroundImage: `url('/login_bg.jpg')`,
+            backgroundImage: `url('/login_bg.webp')`,
             backgroundPosition: 'center bottom'
           }}
         />
