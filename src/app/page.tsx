@@ -36,6 +36,56 @@ export default function Dashboard() {
   const safeIndicators = useMemo(() => indicators || [], [indicators]);
   const safeActionPlans = useMemo(() => actionPlans || [], [actionPlans]);
 
+  // Calcular atingimento médio real dos KPIs baseados na medição mais recente de cada um
+  const averageAtingimento = useMemo(() => {
+    const activeIndicators = safeIndicators.filter(ind => ind && ind.year === 2026);
+    if (activeIndicators.length === 0) return 0;
+
+    let totalAtingimento = 0;
+    let indicatorsWithData = 0;
+
+    activeIndicators.forEach(ind => {
+      if (!ind) return;
+      const measurements = ind.measurements || [];
+      const lastMeas = measurements.length > 0 
+        ? measurements[measurements.length - 1] 
+        : null;
+      
+      if (lastMeas && typeof lastMeas.value === 'number' && ind.target > 0) {
+        const atingimento = Math.min((lastMeas.value / ind.target) * 100, 100);
+        totalAtingimento += atingimento;
+        indicatorsWithData++;
+      }
+    });
+
+    return indicatorsWithData > 0 
+      ? Math.round(totalAtingimento / indicatorsWithData) 
+      : 0;
+  }, [safeIndicators]);
+
+  // Mapeamento de meses para o gráfico
+  const monthNames = useMemo(() => ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], []);
+  
+  // Preparar dados do gráfico unificado de indicadores com segurança e useMemo
+  const chartData = useMemo(() => {
+    return Array.from({ length: 5 }).map((_, index) => {
+      const monthIndex = index; // Jan a Mai
+      const dataObj: any = { name: monthNames[monthIndex] };
+      
+      safeIndicators.forEach(ind => {
+        if (!ind || !ind.name) return;
+        const measurements = ind.measurements || [];
+        const measurement = measurements.find(m => m && m.month === monthIndex + 1);
+        if (measurement && measurement.value !== undefined) {
+          // Simplificar valores monetários para exibir no gráfico
+          dataObj[ind.name] = ind.unit === 'R$' ? measurement.value / 1000 : measurement.value;
+        }
+      });
+      
+      return dataObj;
+    });
+  }, [safeIndicators, monthNames]);
+
   // Função auxiliar de formatação de data robusta
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'Não definida';
@@ -131,56 +181,6 @@ export default function Dashboard() {
   const completedPlans = safeActionPlans.filter(p => p && p.status === 'concluido').length;
   const delayedPlans = safeActionPlans.filter(p => p && p.status === 'atrasado').length;
   const completionRate = totalPlans > 0 ? Math.round((completedPlans / totalPlans) * 100) : 0;
-
-  // Calcular atingimento médio real dos KPIs baseados na medição mais recente de cada um
-  const averageAtingimento = useMemo(() => {
-    const activeIndicators = safeIndicators.filter(ind => ind && ind.year === 2026);
-    if (activeIndicators.length === 0) return 0;
-
-    let totalAtingimento = 0;
-    let indicatorsWithData = 0;
-
-    activeIndicators.forEach(ind => {
-      if (!ind) return;
-      const measurements = ind.measurements || [];
-      const lastMeas = measurements.length > 0 
-        ? measurements[measurements.length - 1] 
-        : null;
-      
-      if (lastMeas && typeof lastMeas.value === 'number' && ind.target > 0) {
-        const atingimento = Math.min((lastMeas.value / ind.target) * 100, 100);
-        totalAtingimento += atingimento;
-        indicatorsWithData++;
-      }
-    });
-
-    return indicatorsWithData > 0 
-      ? Math.round(totalAtingimento / indicatorsWithData) 
-      : 0;
-  }, [safeIndicators]);
-
-  // Mapeamento de meses para o gráfico
-  const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-  
-  // Preparar dados do gráfico unificado de indicadores com segurança e useMemo
-  const chartData = useMemo(() => {
-    return Array.from({ length: 5 }).map((_, index) => {
-      const monthIndex = index; // Jan a Mai
-      const dataObj: any = { name: monthNames[monthIndex] };
-      
-      safeIndicators.forEach(ind => {
-        if (!ind || !ind.name) return;
-        const measurements = ind.measurements || [];
-        const measurement = measurements.find(m => m && m.month === monthIndex + 1);
-        if (measurement && measurement.value !== undefined) {
-          // Simplificar valores monetários para exibir no gráfico
-          dataObj[ind.name] = ind.unit === 'R$' ? measurement.value / 1000 : measurement.value;
-        }
-      });
-      
-      return dataObj;
-    });
-  }, [safeIndicators]);
 
   return (
     <div className="space-y-8 animate-fadeIn">
