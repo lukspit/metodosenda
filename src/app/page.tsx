@@ -27,6 +27,86 @@ const DashboardChart = dynamic(() => import('../components/DashboardChart'), {
   )
 });
 
+const parseMarkdownToHtml = (markdown: string): string => {
+  if (!markdown) return '';
+  
+  const lines = markdown.split('\n');
+  let inList = false;
+  const htmlLines: string[] = [];
+  
+  lines.forEach(line => {
+    let processedLine = line.trim();
+    
+    // Ignorar linhas vazias ou adicionar espaçamento
+    if (!processedLine) {
+      if (inList) {
+        htmlLines.push('</ul>');
+        inList = false;
+      }
+      htmlLines.push('<div class="h-2"></div>');
+      return;
+    }
+    
+    // Verificar títulos H2 (## Título)
+    if (processedLine.startsWith('## ')) {
+      if (inList) {
+        htmlLines.push('</ul>');
+        inList = false;
+      }
+      const titleText = processedLine.replace(/^## /, '');
+      htmlLines.push(`<h2 class="text-sm font-extrabold text-[#C5A85A] mt-5 mb-2 border-b border-slate-800/60 pb-1 uppercase tracking-wider">${titleText}</h2>`);
+      return;
+    }
+    
+    // Verificar títulos H3 (### Título)
+    if (processedLine.startsWith('### ')) {
+      if (inList) {
+        htmlLines.push('</ul>');
+        inList = false;
+      }
+      const titleText = processedLine.replace(/^### /, '');
+      htmlLines.push(`<h3 class="text-xs font-bold text-[#C5A85A] mt-3 mb-1.5">${titleText}</h3>`);
+      return;
+    }
+    
+    // Verificar itens de lista (* item ou - item)
+    const listMatch = processedLine.match(/^[\-\*]\s+(.*)/);
+    if (listMatch) {
+      if (!inList) {
+        htmlLines.push('<ul class="list-disc pl-4 space-y-1 my-2">');
+        inList = true;
+      }
+      let itemText = listMatch[1];
+      // Processar negrito e itálico dentro do item
+      itemText = itemText
+        .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-[#C5A85A] font-bold">$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em class="text-slate-200 italic">$1</em>');
+      
+      htmlLines.push(`<li class="text-xs text-slate-350 leading-relaxed">${itemText}</li>`);
+      return;
+    }
+    
+    // Se estava em lista e a linha atual não é item de lista, fecha a lista
+    if (inList) {
+      htmlLines.push('</ul>');
+      inList = false;
+    }
+    
+    // Parágrafo comum - processar negrito e itálico
+    processedLine = processedLine
+      .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-[#C5A85A] font-bold">$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em class="text-slate-200 italic">$1</em>');
+    
+    htmlLines.push(`<p class="text-xs text-slate-350 leading-relaxed mb-2">${processedLine}</p>`);
+  });
+  
+  if (inList) {
+    htmlLines.push('</ul>');
+  }
+  
+  return htmlLines.join('\n');
+};
+
 export default function Dashboard() {
   const { currentTenant, indicators, actionPlans, loading, saveDashboardInsights } = useApp();
   const [aiInsight, setAiInsight] = useState<string>('');
@@ -149,13 +229,7 @@ export default function Dashboard() {
       
       const data = await response.json();
       if (data && data.insight && typeof data.insight === 'string') {
-        // Formatar quebras de linha para HTML simples para renderizar bonito
-        const formattedInsight = data.insight
-          .replace(/\n/g, '<br />')
-          .replace(/### (.*)/g, '<h3 class="text-sm font-bold text-[#C5A85A] mt-3 mb-2">$1</h3>')
-          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-          .replace(/## (.*)/g, '<h2 class="text-base font-extrabold text-[#C5A85A] mt-4 mb-2 border-b border-slate-800 pb-1">$1</h2>');
-        
+        const formattedInsight = parseMarkdownToHtml(data.insight);
         setAiInsight(formattedInsight);
         await saveDashboardInsights(formattedInsight);
       }
@@ -285,7 +359,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div 
-                className="prose prose-invert max-w-none text-sm leading-relaxed text-slate-200"
+                className="max-w-none text-slate-350 space-y-3"
                 dangerouslySetInnerHTML={{ __html: aiInsight }}
               />
             )}
