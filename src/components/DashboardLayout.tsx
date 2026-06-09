@@ -53,23 +53,30 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
     <div className="flex h-screen bg-[#F8F9FC] dark:bg-[#0F172A] overflow-hidden font-sans transition-colors duration-300">
       
       {/* 1. Sidebar Lateral */}
-      <aside className={`w-[260px] bg-[#1E2538] text-slate-300 flex flex-col justify-between shrink-0 shadow-xl border-r border-slate-800 transition-all duration-300 ${
-        isSidebarOpen ? 'ml-0' : '-ml-[260px]'
+      <aside className={`bg-[#1E2538] text-slate-300 flex flex-col justify-between shrink-0 shadow-xl border-r border-slate-800 transition-all duration-300 ${
+        isSidebarOpen ? 'w-[260px]' : 'w-[75px]'
       }`}>
         <div>
           {/* Logo Senda */}
-          <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800 bg-[#161B29]">
-            <img src="/logo.png" className="w-8 h-8 object-contain" alt="Logo Senda" />
-            <div>
-              <span className="font-extrabold text-white text-lg tracking-wider">MÉTODO</span>
-              <span className="text-[#C5A85A] text-xs font-semibold block -mt-1.5 tracking-widest uppercase">Senda</span>
-            </div>
+          <div className={`h-16 flex items-center border-b border-slate-800 bg-[#161B29] transition-all duration-300 ${
+            isSidebarOpen ? 'gap-3 px-5 justify-start' : 'px-0 justify-center'
+          }`}>
+            <img src="/logo.png" className="h-7 w-auto object-contain shrink-0" alt="Logo Senda" />
+            {isSidebarOpen && (
+              <div className="animate-fadeIn">
+                <span className="font-extrabold text-white text-lg tracking-wider">MÉTODO</span>
+                <span className="text-[#C5A85A] text-xs font-semibold block -mt-1.5 tracking-widest uppercase">Senda</span>
+              </div>
+            )}
           </div>
 
-
           {/* Menu Principal */}
-          <nav className="mt-6 px-4 space-y-1">
-            <p className="text-[10px] font-bold text-slate-500 tracking-widest uppercase px-3 mb-2">Menu</p>
+          <nav className="mt-6 px-3 space-y-1">
+            <p className={`text-[10px] font-bold text-slate-500 tracking-widest uppercase px-3 mb-2 ${
+              isSidebarOpen ? 'block' : 'hidden'
+            }`}>
+              Menu
+            </p>
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.path;
@@ -77,19 +84,28 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                 <Link
                   key={item.path}
                   href={item.path}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                  title={!isSidebarOpen ? item.name : undefined}
+                  className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group ${
+                    isSidebarOpen ? 'gap-3 px-3 py-2.5 justify-start' : 'p-3 justify-center'
+                  } ${
                     isActive 
                       ? 'bg-gradient-to-r from-[#C5A85A]/20 to-[#C5A85A]/5 text-[#C5A85A] border-l-4 border-[#C5A85A]' 
                       : 'hover:bg-slate-800 hover:text-white'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-[#C5A85A]' : 'text-slate-400 group-hover:text-slate-200'}`} />
-                  {item.name}
+                  <Icon className={`w-5 h-5 transition-transform duration-200 group-hover:scale-110 ${
+                    isActive ? 'text-[#C5A85A]' : 'text-slate-400 group-hover:text-slate-200'
+                  }`} />
+                  {isSidebarOpen && <span className="truncate animate-fadeIn">{item.name}</span>}
                 </Link>
               );
             })}
 
-            <p className="text-[10px] font-bold text-slate-500 tracking-widest uppercase px-3 mt-6 mb-2">Secundário</p>
+            <p className={`text-[10px] font-bold text-slate-500 tracking-widest uppercase px-3 mt-6 mb-2 ${
+              isSidebarOpen ? 'block' : 'hidden'
+            }`}>
+              Secundário
+            </p>
             {secondaryMenuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.path;
@@ -97,14 +113,19 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                 <Link
                   key={item.path}
                   href={item.path}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                  title={!isSidebarOpen ? item.name : undefined}
+                  className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group ${
+                    isSidebarOpen ? 'gap-3 px-3 py-2.5 justify-start' : 'p-3 justify-center'
+                  } ${
                     isActive 
                       ? 'bg-gradient-to-r from-[#C5A85A]/20 to-[#C5A85A]/5 text-[#C5A85A] border-l-4 border-[#C5A85A]' 
                       : 'hover:bg-slate-800 hover:text-white'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-[#C5A85A]' : 'text-slate-400 group-hover:text-slate-200'}`} />
-                  {item.name}
+                  <Icon className={`w-5 h-5 transition-transform duration-200 group-hover:scale-110 ${
+                    isActive ? 'text-[#C5A85A]' : 'text-slate-400 group-hover:text-slate-200'
+                  }`} />
+                  {isSidebarOpen && <span className="truncate animate-fadeIn">{item.name}</span>}
                 </Link>
               );
             })}
@@ -112,11 +133,20 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
         </div>
 
         {/* Informações da Versão e Rodapé */}
-        <div className="p-4 border-t border-slate-800 bg-[#161B29] text-center text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} Senda Core v2.0</p>
-          <span className="text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">IA INTEGRADA</span>
+        <div className={`p-4 border-t border-slate-800 bg-[#161B29] text-center text-xs text-slate-500 transition-all duration-300 ${
+          isSidebarOpen ? 'block' : 'px-1 py-3'
+        }`}>
+          {isSidebarOpen ? (
+            <>
+              <p>© {new Date().getFullYear()} Senda Core v2.0</p>
+              <span className="text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">IA INTEGRADA</span>
+            </>
+          ) : (
+            <span className="text-[10px] bg-slate-800 text-[#C5A85A] px-1.5 py-0.5 rounded font-mono font-bold">S2.0</span>
+          )}
         </div>
       </aside>
+
 
       {/* 2. Área do Conteúdo Principal */}
       <div className="flex-1 flex flex-col overflow-hidden">
