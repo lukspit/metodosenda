@@ -146,7 +146,7 @@ export default function LoginPage() {
       {/* Coluna da Direita: Imagem de fundo com frase de Vicente Falconi */}
       <div className="hidden md:block md:w-[58%] lg:w-[64%] relative z-10 bg-[#021730] overflow-hidden">
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          className="absolute inset-0 bg-contain bg-right bg-no-repeat"
           style={{ 
             backgroundImage: `url('/login_bg.webp')`
           }}
