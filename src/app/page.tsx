@@ -29,11 +29,19 @@ export default function Dashboard() {
   const { currentTenant, indicators, actionPlans, loading, saveDashboardInsights } = useApp();
   const [aiInsight, setAiInsight] = useState<string>('');
   const [loadingInsight, setLoadingInsight] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+  const [showChart, setShowChart] = useState(false);
 
+  // Garantir montagem segura do gráfico após a estabilização do DOM (pós-skeleton)
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    if (!loading) {
+      const timer = setTimeout(() => {
+        setShowChart(true);
+      }, 150); // 150ms de delay para reflow estável do DOM
+      return () => clearTimeout(timer);
+    } else {
+      setShowChart(false);
+    }
+  }, [loading]);
 
   // Fallbacks de segurança para arrays e objetos
   const safeIndicators = useMemo(() => indicators || [], [indicators]);
@@ -311,7 +319,7 @@ export default function Dashboard() {
           </div>
 
           <div className="h-[320px] w-full pt-4">
-            {isMounted && safeIndicators.length > 0 ? (
+            {showChart && safeIndicators.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
