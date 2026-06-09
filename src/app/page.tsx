@@ -116,7 +116,7 @@ export default function Dashboard() {
   const safeIndicators = useMemo(() => indicators || [], [indicators]);
   const safeActionPlans = useMemo(() => actionPlans || [], [actionPlans]);
 
-  // Calcular atingimento médio real dos KPIs baseados na medição mais recente de cada um
+  // Calcular atingimento médio real dos KPIs considerando o tipo de acúmulo de cada um
   const averageAtingimento = useMemo(() => {
     const activeIndicators = safeIndicators.filter(ind => ind && ind.year === 2026);
     if (activeIndicators.length === 0) return 0;
@@ -127,12 +127,27 @@ export default function Dashboard() {
     activeIndicators.forEach(ind => {
       if (!ind) return;
       const measurements = ind.measurements || [];
-      const lastMeas = measurements.length > 0 
-        ? measurements[measurements.length - 1] 
-        : null;
+      const hasData = measurements.length > 0;
       
-      if (lastMeas && typeof lastMeas.value === 'number' && ind.target > 0) {
-        const atingimento = Math.min((lastMeas.value / ind.target) * 100, 100);
+      if (hasData && ind.target > 0) {
+        let valueRepresentativo = 0;
+        const type = ind.accumulation_type || 'latest';
+        
+        if (type === 'sum') {
+          // Soma de todas as medições do ano
+          valueRepresentativo = measurements.reduce((acc, m) => acc + (typeof m.value === 'number' ? m.value : 0), 0);
+        } else if (type === 'avg') {
+          // Média das medições do ano
+          const validMeas = measurements.filter(m => typeof m.value === 'number');
+          const sum = validMeas.reduce((acc, m) => acc + (m.value || 0), 0);
+          valueRepresentativo = validMeas.length > 0 ? (sum / validMeas.length) : 0;
+        } else {
+          // Última medição recente (latest)
+          const lastMeas = measurements[measurements.length - 1];
+          valueRepresentativo = (lastMeas && typeof lastMeas.value === 'number') ? lastMeas.value : 0;
+        }
+
+        const atingimento = Math.min((valueRepresentativo / ind.target) * 100, 100);
         totalAtingimento += atingimento;
         indicatorsWithData++;
       }

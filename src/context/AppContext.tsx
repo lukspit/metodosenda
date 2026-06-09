@@ -56,6 +56,7 @@ export interface Indicator {
   year: number;
   chart_type?: 'line' | 'bar' | 'area';
   indicator_type?: 'simple' | 'calculated';
+  accumulation_type?: 'sum' | 'latest' | 'avg';
   variables?: IndicatorVariable[];
   formula?: string;
   custom_unit?: string;
@@ -90,6 +91,7 @@ export const parseIndicator = (dbInd: any): Indicator => {
   let variables: IndicatorVariable[] = [];
   let formula = '';
   let custom_unit = '';
+  let accumulation_type: 'sum' | 'latest' | 'avg' = 'latest';
 
   const rawMeas = dbInd.measurements;
 
@@ -101,9 +103,19 @@ export const parseIndicator = (dbInd: any): Indicator => {
     variables = rawMeas.variables || [];
     formula = rawMeas.formula || '';
     custom_unit = rawMeas.custom_unit || '';
+    
+    // Ler accumulation_type ou inferir a partir da unidade se ausente
+    if (rawMeas.accumulation_type) {
+      accumulation_type = rawMeas.accumulation_type;
+    } else {
+      const u = dbInd.unit;
+      accumulation_type = (u === 'R$' || u === 'qtd' || u === 'horas') ? 'sum' : 'latest';
+    }
   } else {
     // Formato antigo (array)
     parsedMeasurements = rawMeas || [];
+    const u = dbInd.unit;
+    accumulation_type = (u === 'R$' || u === 'qtd' || u === 'horas') ? 'sum' : 'latest';
   }
 
   // Se for calculado, recalcula os valores de cada mês com base nas variáveis e fórmula
@@ -121,6 +133,7 @@ export const parseIndicator = (dbInd: any): Indicator => {
     ...dbInd,
     chart_type,
     indicator_type,
+    accumulation_type,
     variables,
     formula,
     custom_unit,
@@ -700,10 +713,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!currentTenant) return false;
 
     // Serialização inteligente: empacota metadados no JSONB measurements
+    const defaultAccumulation = (ind.unit === 'R$' || ind.unit === 'qtd' || ind.unit === 'horas') ? 'sum' : 'latest';
     const serializedMeasurements = {
       points: ind.measurements || [],
       chart_type: ind.chart_type || 'line',
       indicator_type: ind.indicator_type || 'simple',
+      accumulation_type: ind.accumulation_type || defaultAccumulation,
       variables: ind.variables || [],
       formula: ind.formula || '',
       custom_unit: ind.custom_unit || ''
@@ -739,6 +754,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         year: ind.year || 2026,
         chart_type: ind.chart_type || 'line',
         indicator_type: ind.indicator_type || 'simple',
+        accumulation_type: ind.accumulation_type || defaultAccumulation,
         variables: ind.variables || [],
         formula: ind.formula || '',
         custom_unit: ind.custom_unit || '',
@@ -755,11 +771,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!existing) return false;
 
       const merged = { ...existing, ...ind };
+      const defaultAccumulation = (merged.unit === 'R$' || merged.unit === 'qtd' || merged.unit === 'horas') ? 'sum' : 'latest';
 
       const serializedMeasurements = {
         points: merged.measurements || [],
         chart_type: merged.chart_type || 'line',
         indicator_type: merged.indicator_type || 'simple',
+        accumulation_type: merged.accumulation_type || defaultAccumulation,
         variables: merged.variables || [],
         formula: merged.formula || '',
         custom_unit: merged.custom_unit || ''

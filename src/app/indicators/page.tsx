@@ -78,6 +78,7 @@ export default function IndicatorsPage() {
   const [indIndicatorType, setIndIndicatorType] = useState<Required<Indicator>['indicator_type']>('simple');
   const [indVariables, setIndVariables] = useState<IndicatorVariable[]>([]);
   const [indFormula, setIndFormula] = useState('');
+  const [indAccumulationType, setIndAccumulationType] = useState<'sum' | 'latest' | 'avg'>('latest');
 
   // Campos para Medições Mensais (Janeiro a Dezembro)
   const [monthlyValues, setMonthlyValues] = useState<Record<number, string>>({});
@@ -167,6 +168,7 @@ export default function IndicatorsPage() {
         custom_unit
       } = result.data;
       
+      const defaultAccum = (unit === 'R$' || unit === 'qtd' || unit === 'horas') ? 'sum' : 'latest';
       const success = await createIndicator({
         name,
         department_id: department_id || null,
@@ -175,6 +177,7 @@ export default function IndicatorsPage() {
         year: Number(year) || 2026,
         chart_type: chart_type || 'line',
         indicator_type: indicator_type || 'simple',
+        accumulation_type: defaultAccum,
         variables: variables || [],
         formula: formula || '',
         custom_unit: custom_unit || '',
@@ -201,6 +204,7 @@ export default function IndicatorsPage() {
     setIndYear('2026');
     setIndChartType('line');
     setIndIndicatorType('simple');
+    setIndAccumulationType('latest');
     setIndVariables([]);
     setIndFormula('');
     setIsModalOpen(true);
@@ -217,6 +221,8 @@ export default function IndicatorsPage() {
     setIndYear(ind.year.toString());
     setIndChartType(ind.chart_type || 'line');
     setIndIndicatorType(ind.indicator_type || 'simple');
+    const defaultAccum = (ind.unit === 'R$' || ind.unit === 'qtd' || ind.unit === 'horas') ? 'sum' : 'latest';
+    setIndAccumulationType(ind.accumulation_type || defaultAccum);
     setIndVariables(ind.variables || []);
     setIndFormula(ind.formula || '');
     setIsModalOpen(true);
@@ -310,6 +316,7 @@ export default function IndicatorsPage() {
       year: Number(indYear) || 2026,
       chart_type: indChartType,
       indicator_type: indIndicatorType,
+      accumulation_type: indAccumulationType,
       variables: indIndicatorType === 'calculated' ? indVariables : [],
       formula: indIndicatorType === 'calculated' ? indFormula : ''
     };
@@ -860,8 +867,28 @@ export default function IndicatorsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
         {filteredIndicators.length > 0 ? (
           filteredIndicators.map((ind) => {
-            const lastMeas = ind.measurements.length > 0 ? ind.measurements[ind.measurements.length - 1] : null;
-            const currentVal = lastMeas && typeof lastMeas.value === 'number' ? lastMeas.value : null;
+            const measurements = ind.measurements || [];
+            const hasData = measurements.length > 0;
+            const accumulationType = ind.accumulation_type || 'latest';
+            
+            let displayValue = 0;
+            let label = 'Medição Recente';
+            
+            if (accumulationType === 'sum') {
+              label = 'Total Acumulado';
+              displayValue = measurements.reduce((acc, m) => acc + (typeof m.value === 'number' ? m.value : 0), 0);
+            } else if (accumulationType === 'avg') {
+              label = 'Média Período';
+              const validMeas = measurements.filter(m => typeof m.value === 'number');
+              const sum = validMeas.reduce((acc, m) => acc + (m.value || 0), 0);
+              displayValue = validMeas.length > 0 ? (sum / validMeas.length) : 0;
+            } else {
+              label = 'Medição Recente';
+              const lastMeas = measurements.length > 0 ? measurements[measurements.length - 1] : null;
+              displayValue = (lastMeas && typeof lastMeas.value === 'number') ? lastMeas.value : 0;
+            }
+            
+            const currentVal = hasData ? displayValue : null;
             const targetMet = currentVal !== null && currentVal >= ind.target;
             const deptName = departments.find(d => d.id === ind.department_id)?.name || 'Geral';
             
@@ -921,12 +948,12 @@ export default function IndicatorsPage() {
                   {/* Resultados Rápidos */}
                   <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-md border border-slate-100 mb-6">
                     <div>
-                      <span className="text-[9px] text-slate-400 uppercase tracking-wider block font-semibold">Medição Recente</span>
+                      <span className="text-[9px] text-slate-400 uppercase tracking-wider block font-semibold">{label}</span>
                       <span className="text-sm font-bold text-slate-800">
                         {currentVal !== null ? (
                           <>
                             {displayUnit === 'R$' ? 'R$ ' : ''}
-                            {currentVal.toLocaleString('pt-BR')}
+                            {currentVal.toLocaleString('pt-BR', { maximumFractionDigits: displayUnit === '%' ? 1 : 0 })}
                             {displayUnit !== 'R$' && ` ${displayUnit}`}
                           </>
                         ) : 'Sem medição'}
@@ -1199,7 +1226,12 @@ export default function IndicatorsPage() {
                   </label>
                   <select
                     value={indUnit}
-                    onChange={e => setIndUnit(e.target.value as Indicator['unit'])}
+                    onChange={e => {
+                      const val = e.target.value as Indicator['unit'];
+                      setIndUnit(val);
+                      const defaultAccum = (val === 'R$' || val === 'qtd' || val === 'horas') ? 'sum' : 'latest';
+                      setIndAccumulationType(defaultAccum);
+                    }}
                     className="w-full bg-slate-50 text-xs text-slate-700 border border-slate-200 rounded-md py-2.5 px-3 focus:outline-none"
                   >
                     <option value="%">%</option>
@@ -1222,6 +1254,53 @@ export default function IndicatorsPage() {
                     <option value="2026">2026</option>
                     <option value="2027">2027</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Tipo de Cálculo de Atingimento */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">
+                  Cálculo do Progresso (Atingimento da Meta Anual)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setIndAccumulationType('sum')}
+                    className={`py-2.5 px-3 border rounded-md transition-all flex flex-col items-center justify-center text-center gap-1 cursor-pointer ${
+                      indAccumulationType === 'sum' 
+                        ? 'border-[#C5A85A] bg-[#C5A85A]/5 text-slate-800 font-bold ring-1 ring-[#C5A85A]' 
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-500'
+                    }`}
+                  >
+                    <span className="text-[11px] font-bold">Acumulado (Soma)</span>
+                    <span className="text-[9px] text-slate-400 font-normal leading-tight">Soma os meses (Faturamento)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIndAccumulationType('latest')}
+                    className={`py-2.5 px-3 border rounded-md transition-all flex flex-col items-center justify-center text-center gap-1 cursor-pointer ${
+                      indAccumulationType === 'latest' 
+                        ? 'border-[#C5A85A] bg-[#C5A85A]/5 text-slate-800 font-bold ring-1 ring-[#C5A85A]' 
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-500'
+                    }`}
+                  >
+                    <span className="text-[11px] font-bold">Último Lançamento</span>
+                    <span className="text-[9px] text-slate-400 font-normal leading-tight">Mês mais recente (NPS, Headcount)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIndAccumulationType('avg')}
+                    className={`py-2.5 px-3 border rounded-md transition-all flex flex-col items-center justify-center text-center gap-1 cursor-pointer ${
+                      indAccumulationType === 'avg' 
+                        ? 'border-[#C5A85A] bg-[#C5A85A]/5 text-slate-800 font-bold ring-1 ring-[#C5A85A]' 
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-500'
+                    }`}
+                  >
+                    <span className="text-[11px] font-bold">Média do Período</span>
+                    <span className="text-[9px] text-slate-400 font-normal leading-tight">Média aritmética (Margem %)</span>
+                  </button>
                 </div>
               </div>
 
