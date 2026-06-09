@@ -109,7 +109,22 @@ ALTER TABLE public.action_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.meetings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.meeting_minutes ENABLE ROW LEVEL SECURITY;
 
--- 9. Função para validar acesso ao tenant
+-- 9. Funções auxiliares livres de recursão para obter dados do usuário logado
+CREATE OR REPLACE FUNCTION public.get_user_tenant()
+RETURNS UUID AS $$
+BEGIN
+    RETURN (SELECT tenant_id FROM public.profiles WHERE id = auth.uid());
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.get_user_role()
+RETURNS TEXT AS $$
+BEGIN
+    RETURN (SELECT role FROM public.profiles WHERE id = auth.uid());
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Função genérica para validar acesso ao tenant
 CREATE OR REPLACE FUNCTION public.user_has_access_to_tenant(target_tenant_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
@@ -117,10 +132,8 @@ DECLARE
     user_tenant UUID;
     has_rel BOOLEAN;
 BEGIN
-    -- Obter informações do usuário logado
-    SELECT role, tenant_id INTO user_role, user_tenant
-    FROM public.profiles
-    WHERE id = auth.uid();
+    user_tenant := public.get_user_tenant();
+    user_role := public.get_user_role();
 
     -- Se for admin global, tem acesso a tudo
     IF user_role = 'admin' THEN
@@ -146,15 +159,15 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Perfis (Profiles)
 CREATE POLICY "Permitir leitura de perfis da mesma empresa" ON public.profiles
-    FOR SELECT USING (public.user_has_access_to_tenant(tenant_id));
+    FOR SELECT USING (tenant_id = public.get_user_tenant());
 
 CREATE POLICY "Permitir update no próprio perfil" ON public.profiles
     FOR UPDATE USING (id = auth.uid());
 
 CREATE POLICY "Admins podem gerenciar perfis da mesma empresa" ON public.profiles
     FOR ALL USING (
-        public.user_has_access_to_tenant(tenant_id) AND 
-        (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('admin', 'consultor')
+        tenant_id = public.get_user_tenant() AND 
+        public.get_user_role() IN ('admin', 'consultor')
     );
 
 -- Tenants
@@ -164,12 +177,12 @@ CREATE POLICY "Permitir ver dados das suas empresas" ON public.tenants
 CREATE POLICY "Admins podem atualizar dados da sua empresa" ON public.tenants
     FOR UPDATE USING (
         public.user_has_access_to_tenant(id) AND 
-        (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('admin', 'consultor')
+        public.get_user_role() IN ('admin', 'consultor')
     );
 
 -- User Tenants
 CREATE POLICY "Permitir ver associações de tenants" ON public.user_tenants
-    FOR SELECT USING (user_id = auth.uid() OR (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');
+    FOR SELECT USING (user_id = auth.uid() OR public.get_user_role() = 'admin');
 
 -- Departamentos
 CREATE POLICY "Controle por tenant nos departamentos" ON public.departments
