@@ -118,7 +118,7 @@ export default function MinutesPage() {
         {/* Lado Esquerdo: Redigir Ata & Lista de Atas (7 Colunas) */}
         <div className="lg:col-span-7 space-y-6">
           {/* Escrever Nova Ata */}
-          <div className="bg-white dark:bg-[#1E2538] rounded-2xl p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm">
+          <div className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm">
             <h3 className="font-bold text-slate-800 dark:text-white text-base mb-4 flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5 text-[#C5A85A]" />
               Nova Ata de Reunião
@@ -132,7 +132,7 @@ export default function MinutesPage() {
                   placeholder="Ex: Alinhamento Estratégico Mensal - Junho/2026"
                   value={newTitle}
                   onChange={e => setNewTitle(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
+                  className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
                 />
               </div>
 
@@ -143,7 +143,7 @@ export default function MinutesPage() {
                   value={newContent}
                   onChange={e => setNewContent(e.target.value)}
                   rows={6}
-                  className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
+                  className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
                 />
               </div>
 
@@ -151,7 +151,7 @@ export default function MinutesPage() {
                 <button
                   type="submit"
                   disabled={!newTitle.trim() || !newContent.trim()}
-                  className="bg-[#C5A85A] hover:bg-[#B3964C] text-white disabled:opacity-40 font-semibold px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md transition-all active:scale-95 text-sm"
+                  className="bg-[#C5A85A] hover:bg-[#B3964C] text-white disabled:opacity-40 font-semibold px-5 py-2.5 rounded-md flex items-center gap-2 shadow-md transition-all active:scale-95 text-sm"
                 >
                   <Send className="w-4 h-4" /> Salvar Ata
                 </button>
@@ -168,7 +168,7 @@ export default function MinutesPage() {
                 {meetingMinutes.map((minute) => (
                   <div 
                     key={minute.id}
-                    className="bg-white dark:bg-[#1E2538] rounded-xl p-4 border border-slate-200/50 dark:border-slate-800/80 shadow-sm flex items-center justify-between gap-4 transition-all hover:bg-slate-50/50 dark:hover:bg-slate-800/20"
+                    className="bg-white dark:bg-[#1E2538] rounded-md p-4 border border-slate-200/50 dark:border-slate-800/80 shadow-sm flex items-center justify-between gap-4 transition-all hover:bg-slate-50/50 dark:hover:bg-slate-800/20"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-[#C5A85A]/10 text-[#C5A85A] flex items-center justify-center shrink-0">
@@ -200,7 +200,7 @@ export default function MinutesPage() {
 
         {/* Lado Direito: Resultados da Análise de IA (5 Colunas) */}
         <div className="lg:col-span-5">
-          <div className="bg-gradient-to-br from-[#1E2538] to-[#111622] text-white rounded-2xl p-6 border border-slate-800 shadow-xl min-h-[400px] flex flex-col justify-between relative overflow-hidden sticky top-6">
+          <div className="bg-gradient-to-br from-[#1E2538] to-[#111622] text-white rounded-lg p-6 border border-slate-800 shadow-xl min-h-[400px] flex flex-col justify-between relative overflow-hidden sticky top-6">
             
             {/* Brilho da IA */}
             <div className="absolute -right-10 -top-10 w-32 h-32 bg-[#C5A85A] rounded-full blur-[70px] opacity-10 pointer-events-none" />
@@ -246,7 +246,7 @@ export default function MinutesPage() {
                           const dept = departments.find(d => d.id === plan.department_id)?.name || 'Geral';
                           
                           return (
-                            <div key={idx} className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 space-y-1">
+                            <div key={idx} className="bg-slate-800/40 border border-slate-700/40 rounded-md p-3 space-y-1">
                               <h5 className="text-xs font-bold text-white leading-tight">{plan.name}</h5>
                               <p className="text-[10px] text-slate-400 font-light">{plan.description}</p>
                               <div className="flex justify-between text-[9px] text-[#C5A85A] font-medium pt-1">
@@ -277,7 +277,7 @@ export default function MinutesPage() {
                 <button
                   onClick={handleImportPlans}
                   disabled={plansImported}
-                  className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 ${
+                  className={`w-full py-2.5 rounded-md text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 ${
                     plansImported
                       ? 'bg-emerald-500 text-white cursor-default'
                       : 'bg-[#C5A85A] hover:bg-[#B3964C] text-white'

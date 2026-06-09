@@ -125,7 +125,7 @@ export const SmartInput: React.FC<SmartInputProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#1E2538]/5 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm backdrop-blur-md transition-all duration-300">
+    <div className="w-full bg-[#1E2538]/5 border border-slate-200 dark:border-slate-800 rounded-md p-4 shadow-sm backdrop-blur-md transition-all duration-300">
       
       {/* Barra de input */}
       <div className="relative flex items-center gap-2">

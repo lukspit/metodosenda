@@ -50,7 +50,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   return (
-    <div className="flex h-screen bg-[#F8F9FC] dark:bg-[#0F172A] overflow-hidden font-sans transition-colors duration-300">
+    <div className="flex h-screen bg-white dark:bg-[#0F172A] overflow-hidden font-sans transition-colors duration-300">
       
       {/* 1. Sidebar Lateral */}
       <aside className={`bg-[#1E2538] text-slate-300 flex flex-col justify-between shrink-0 shadow-xl border-r border-slate-800 transition-all duration-300 ${
@@ -63,9 +63,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           }`}>
             <img 
               src="/logo.png" 
-              className={`object-contain shrink-0 transition-all duration-300 ${
-                isSidebarOpen ? 'h-5 w-auto' : 'h-6 w-auto'
-              }`} 
+              className="h-4 w-auto object-contain shrink-0 transition-all duration-300" 
               alt="Logo Senda" 
             />
             {isSidebarOpen && (
@@ -159,13 +157,13 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
       <div className="flex-1 flex flex-col overflow-hidden">
         
         {/* Cabeçalho Superior (Header) */}
-        <header className="h-16 bg-white dark:bg-[#161B29] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 z-10 shadow-sm shrink-0">
+        <header className="h-16 bg-[#1E2538] text-slate-300 border-b border-slate-800 flex items-center justify-between px-6 z-10 shadow-sm shrink-0">
           
           <div className="flex items-center gap-4">
             {/* Hambúrguer sidebar */}
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-300 transition-all active:scale-95"
+              className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 transition-all active:scale-95"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -177,11 +175,11 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
               onClick={() => setShowCulture(!showCulture)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
                 showCulture 
-                  ? 'bg-[#C5A85A] border-[#C5A85A] text-white shadow-md' 
+                  ? 'bg-[#C5A85A] border-[#C5A85A] text-[#1E2538] shadow-md' 
                   : 'bg-[#C5A85A]/10 border-[#C5A85A]/20 text-[#C5A85A] hover:bg-[#C5A85A]/20'
               }`}
             >
-              <Heart className={`w-3.5 h-3.5 ${showCulture ? 'fill-white' : ''}`} />
+              <Heart className={`w-3.5 h-3.5 ${showCulture ? 'fill-[#1E2538]' : ''}`} />
               Cultura Organizacional
               {showCulture ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
@@ -193,7 +191,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             <div className="relative">
               <button
                 onClick={() => setShowTenantDropdown(!showTenantDropdown)}
-                className="flex items-center gap-2 bg-slate-50 dark:bg-[#1A2332] border border-slate-200 dark:border-slate-700 px-4 py-1.5 rounded-lg text-sm text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all"
+                className="flex items-center gap-2 bg-slate-800/40 border border-slate-700 px-4 py-1.5 rounded-lg text-sm text-slate-200 font-medium hover:bg-slate-800/80 transition-all"
               >
                 <Layers className="w-4 h-4 text-[#C5A85A]" />
                 {currentTenant?.name || 'Carregando...'}
@@ -201,8 +199,8 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
               </button>
 
               {showTenantDropdown && (
-                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#1E2538] border border-slate-200 dark:border-slate-800 rounded-lg shadow-xl py-1 z-50">
-                  <p className="text-[10px] text-slate-400 font-bold tracking-wider uppercase px-3 py-1.5">Mudar Empresa</p>
+                <div className="absolute right-0 mt-2 w-56 bg-[#1E2538] border border-slate-800 rounded-lg shadow-xl py-1 z-50">
+                  <p className="text-[10px] text-slate-450 font-bold tracking-wider uppercase px-3 py-1.5">Mudar Empresa</p>
                   {tenants.map(t => (
                     <button
                       key={t.id}
@@ -210,8 +208,8 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                         setCurrentTenant(t);
                         setShowTenantDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between ${
-                        currentTenant?.id === t.id ? 'text-[#C5A85A] font-semibold bg-[#C5A85A]/5' : 'text-slate-700 dark:text-slate-200'
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-800 flex items-center justify-between ${
+                        currentTenant?.id === t.id ? 'text-[#C5A85A] font-semibold bg-[#C5A85A]/5' : 'text-slate-350'
                       }`}
                     >
                       {t.name}
@@ -225,19 +223,19 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             {/* Tela cheia */}
             <button 
               onClick={toggleFullscreen}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors hidden sm:block"
+              className="text-slate-400 hover:text-slate-200 transition-colors hidden sm:block"
               title="Tela Cheia"
             >
               <Maximize2 className="w-5 h-5" />
             </button>
 
             {/* Usuário Logado */}
-            <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-700 pl-4">
+            <div className="flex items-center gap-3 border-l border-slate-800 pl-4">
               <div className="text-right hidden md:block">
-                <p className="text-xs text-slate-400">Consultor Ativo</p>
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{currentProfile?.name || 'Senda User'}</p>
+                <p className="text-xs text-slate-500">Consultor Ativo</p>
+                <p className="text-sm font-semibold text-slate-100">{currentProfile?.name || 'Senda User'}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold border-2 border-[#C5A85A] shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-bold border-2 border-[#C5A85A] shadow-sm">
                 {currentProfile?.name?.split(' ').map(n => n[0]).slice(0, 2).join('') || 'U'}
               </div>
             </div>
@@ -248,7 +246,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
         {/* 3. Painel Expansível de Cultura */}
         {showCulture && currentTenant && (
           <div className="bg-[#1E2538] text-white border-b border-slate-800 px-8 py-6 z-20 shadow-inner grid grid-cols-1 md:grid-cols-4 gap-6 animate-fadeIn transition-all duration-300">
-            <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+            <div className="bg-slate-800/40 rounded-md p-4 border border-slate-700/50">
               <h4 className="text-xs font-bold text-[#C5A85A] uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <Compass className="w-4 h-4" /> Missão
               </h4>
@@ -256,7 +254,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                 {currentTenant.mission || 'Não cadastrado'}
               </p>
             </div>
-            <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+            <div className="bg-slate-800/40 rounded-md p-4 border border-slate-700/50">
               <h4 className="text-xs font-bold text-[#C5A85A] uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <Users className="w-4 h-4" /> Negócio
               </h4>
@@ -264,7 +262,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                 {currentTenant.vision || 'Não cadastrado'}
               </p>
             </div>
-            <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+            <div className="bg-slate-800/40 rounded-md p-4 border border-slate-700/50">
               <h4 className="text-xs font-bold text-[#C5A85A] uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <Heart className="w-4 h-4" /> Valores
               </h4>
@@ -272,7 +270,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                 {currentTenant.values || 'Não cadastrado'}
               </p>
             </div>
-            <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+            <div className="bg-slate-800/40 rounded-md p-4 border border-slate-700/50">
               <h4 className="text-xs font-bold text-[#C5A85A] uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <Layers className="w-4 h-4" /> Propósito
               </h4>

@@ -110,27 +110,27 @@ export default function ActionPlansPage() {
 
       {/* Feedback de IA */}
       {aiFeedback && (
-        <div className="bg-[#C5A85A]/10 border border-[#C5A85A]/35 text-[#C5A85A] px-4 py-3 rounded-xl flex items-center gap-2 text-xs font-semibold animate-fadeIn">
+        <div className="bg-[#C5A85A]/10 border border-[#C5A85A]/35 text-[#C5A85A] px-4 py-3 rounded-md flex items-center gap-2 text-xs font-semibold animate-fadeIn">
           <Sparkles className="w-4 h-4 fill-[#C5A85A]/20" />
           <span>IA: {aiFeedback}</span>
         </div>
       )}
 
       {/* Filtros */}
-      <div className="bg-white dark:bg-[#1E2538] p-5 rounded-2xl border border-slate-200/60 dark:border-slate-850 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-white dark:bg-[#1E2538] p-5 rounded-lg border border-slate-200/60 dark:border-slate-850 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
         <input
           type="text"
           placeholder="Filtrar por nome ou descrição..."
           value={searchText}
           onChange={e => setSearchText(e.target.value)}
-          className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A85A] w-full md:w-64"
+          className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] w-full md:w-64"
         />
 
         <div className="flex flex-wrap gap-3 w-full md:w-auto justify-end">
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
-            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
+            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
           >
             <option value="all">Todos os Status</option>
             <option value="pendente">Pendente</option>
@@ -142,7 +142,7 @@ export default function ActionPlansPage() {
           <select
             value={filterResp}
             onChange={e => setFilterResp(e.target.value)}
-            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
+            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
           >
             <option value="all">Qualquer Responsável</option>
             {profiles.map(p => (
@@ -162,7 +162,7 @@ export default function ActionPlansPage() {
             return (
               <div 
                 key={plan.id}
-                className="bg-white dark:bg-[#1E2538] rounded-2xl p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-all duration-200"
+                className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-all duration-200"
               >
                 {/* Info Geral */}
                 <div className="flex-1 space-y-2">
@@ -241,7 +241,7 @@ export default function ActionPlansPage() {
             );
           })
         ) : (
-          <div className="text-center py-12 bg-white dark:bg-[#1E2538] rounded-2xl border border-dashed border-slate-350 dark:border-slate-800 text-slate-400 text-sm">
+          <div className="text-center py-12 bg-white dark:bg-[#1E2538] rounded-lg border border-dashed border-slate-350 dark:border-slate-800 text-slate-400 text-sm">
             Nenhum plano de ação ativo encontrado.
           </div>
         )}

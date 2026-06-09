@@ -57,7 +57,7 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Lado Esquerdo: Gestão da Identidade e Cultura (8 Colunas) */}
-        <div className="lg:col-span-8 bg-white dark:bg-[#1E2538] rounded-2xl p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-6">
+        <div className="lg:col-span-8 bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-6">
           <h3 className="font-bold text-slate-850 dark:text-white text-base mb-2 flex items-center gap-2">
             <Compass className="w-5 h-5 text-[#C5A85A]" />
             Identidade Estratégica (Cultura)
@@ -72,7 +72,7 @@ export default function SettingsPage() {
                   onChange={e => setMission(e.target.value)}
                   rows={3}
                   placeholder="Ex: Contribuir para a evolução das empresas..."
-                  className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
+                  className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
                 />
               </div>
 
@@ -83,7 +83,7 @@ export default function SettingsPage() {
                   onChange={e => setVision(e.target.value)}
                   rows={3}
                   placeholder="Ex: Consultoria em Gestão Estratégica..."
-                  className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
+                  className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
                 />
               </div>
             </div>
@@ -95,7 +95,7 @@ export default function SettingsPage() {
                 value={purpose}
                 onChange={e => setPurpose(e.target.value)}
                 placeholder="Ex: Ser a maior empresa de consultoria estratégica do país..."
-                className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
+                className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
               />
             </div>
 
@@ -109,14 +109,14 @@ export default function SettingsPage() {
 Ética acima de tudo
 Foco estrito em resultado
 Agilidade e capricho"
-                className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
+                className="w-full bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
               />
             </div>
 
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="bg-[#C5A85A] hover:bg-[#B3964C] text-white font-semibold px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-md transition-all active:scale-95 text-sm"
+                className="bg-[#C5A85A] hover:bg-[#B3964C] text-white font-semibold px-6 py-2.5 rounded-md flex items-center gap-2 shadow-md transition-all active:scale-95 text-sm"
               >
                 <Save className="w-4 h-4" /> Salvar Cultura
               </button>
@@ -128,7 +128,7 @@ Agilidade e capricho"
         <div className="lg:col-span-4 space-y-6">
           
           {/* Listagem de Membros da Equipe */}
-          <div className="bg-white dark:bg-[#1E2538] rounded-2xl p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-4">
+          <div className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-4">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800/80">
               <h3 className="font-bold text-slate-850 dark:text-white text-sm flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#C5A85A]" />
@@ -151,7 +151,7 @@ Agilidade e capricho"
                 return (
                   <div 
                     key={profile.id}
-                    className="flex items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-[#161B29]/65 border border-slate-100 dark:border-slate-800/80 rounded-xl"
+                    className="flex items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-[#161B29]/65 border border-slate-100 dark:border-slate-800/80 rounded-md"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0">
@@ -182,7 +182,7 @@ Agilidade e capricho"
           </div>
 
           {/* Permissões do Sistema */}
-          <div className="bg-white dark:bg-[#1E2538] rounded-2xl p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-3">
+          <div className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-3">
             <h3 className="font-bold text-slate-850 dark:text-white text-sm flex items-center gap-2">
               <Shield className="w-4 h-4 text-[#C5A85A]" />
               Funções de Acesso

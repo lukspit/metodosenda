@@ -101,14 +101,14 @@ export default function IndicatorsPage() {
 
       {/* Feedback de IA */}
       {aiFeedback && (
-        <div className="bg-[#C5A85A]/10 border border-[#C5A85A]/35 text-[#C5A85A] px-4 py-3 rounded-xl flex items-center gap-2 text-xs font-semibold animate-fadeIn">
+        <div className="bg-[#C5A85A]/10 border border-[#C5A85A]/35 text-[#C5A85A] px-4 py-3 rounded-md flex items-center gap-2 text-xs font-semibold animate-fadeIn">
           <Sparkles className="w-4 h-4 fill-[#C5A85A]/20" />
           <span>IA: {aiFeedback}</span>
         </div>
       )}
 
       {/* Filtros de Visualização */}
-      <div className="bg-white dark:bg-[#1E2538] p-5 rounded-2xl border border-slate-200/60 dark:border-slate-850 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-white dark:bg-[#1E2538] p-5 rounded-lg border border-slate-200/60 dark:border-slate-850 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 font-semibold self-start md:self-auto">
           <Filter className="w-4 h-4 text-[#C5A85A]" />
           Filtros de Busca
@@ -120,13 +120,13 @@ export default function IndicatorsPage() {
             placeholder="Buscar por nome..."
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
-            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-750 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
+            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-750 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
           />
 
           <select
             value={filterDept}
             onChange={e => setFilterDept(e.target.value)}
-            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-750 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
+            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-750 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
           >
             <option value="all">Todos os setores</option>
             {departments.map(d => (
@@ -137,7 +137,7 @@ export default function IndicatorsPage() {
           <select
             value={filterYear}
             onChange={e => setFilterYear(Number(e.target.value))}
-            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-750 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
+            className="bg-slate-50 dark:bg-[#1A2332] text-sm text-slate-750 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
           >
             <option value={2026}>Ano: 2026</option>
             <option value={2027}>Ano: 2027</option>
@@ -157,7 +157,7 @@ export default function IndicatorsPage() {
             return (
               <div 
                 key={ind.id}
-                className="bg-white dark:bg-[#1E2538] rounded-2xl p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-200"
+                className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-200"
               >
                 <div>
                   {/* Cabeçalho do Card */}
@@ -181,7 +181,7 @@ export default function IndicatorsPage() {
                   </div>
 
                   {/* Resultados Rápidos */}
-                  <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-[#161B29]/65 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 mb-6">
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-[#161B29]/65 p-3 rounded-md border border-slate-100 dark:border-slate-800/80 mb-6">
                     <div>
                       <span className="text-[9px] text-slate-400 uppercase tracking-wider block font-semibold">Medição Recente</span>
                       <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
@@ -257,7 +257,7 @@ export default function IndicatorsPage() {
             );
           })
         ) : (
-          <div className="col-span-2 text-center py-12 bg-white dark:bg-[#1E2538] rounded-2xl border border-dashed border-slate-350 dark:border-slate-800 text-slate-400 text-sm">
+          <div className="col-span-2 text-center py-12 bg-white dark:bg-[#1E2538] rounded-lg border border-dashed border-slate-350 dark:border-slate-800 text-slate-400 text-sm">
             Nenhum indicador encontrado com os filtros atuais.
           </div>
         )}

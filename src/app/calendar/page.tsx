@@ -136,7 +136,7 @@ export default function CalendarPage() {
 
       {/* Feedback de IA */}
       {aiFeedback && (
-        <div className="bg-[#C5A85A]/10 border border-[#C5A85A]/35 text-[#C5A85A] px-4 py-3 rounded-xl flex items-center gap-2 text-xs font-semibold animate-fadeIn">
+        <div className="bg-[#C5A85A]/10 border border-[#C5A85A]/35 text-[#C5A85A] px-4 py-3 rounded-md flex items-center gap-2 text-xs font-semibold animate-fadeIn">
           <Sparkles className="w-4 h-4 fill-[#C5A85A]/20" />
           <span>IA: {aiFeedback}</span>
         </div>
@@ -146,7 +146,7 @@ export default function CalendarPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Calendário Mensal (8 Colunas) */}
-        <div className="lg:col-span-8 bg-white dark:bg-[#1E2538] rounded-2xl p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm">
+        <div className="lg:col-span-8 bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm">
           {/* Header do Calendário */}
           <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800/80">
             <h3 className="font-extrabold text-slate-800 dark:text-white text-lg capitalize">
@@ -184,7 +184,7 @@ export default function CalendarPage() {
                 <button
                   key={idx}
                   onClick={() => setSelectedDate(day)}
-                  className={`min-h-[75px] p-2 rounded-xl flex flex-col justify-between border transition-all duration-200 text-left relative ${
+                  className={`min-h-[75px] p-2 rounded-md flex flex-col justify-between border transition-all duration-200 text-left relative ${
                     !isCurrentMonth 
                       ? 'text-slate-300 dark:text-slate-650 bg-slate-50/30 dark:bg-transparent border-transparent' 
                       : isSelected
@@ -226,7 +226,7 @@ export default function CalendarPage() {
         <div className="lg:col-span-4 space-y-6">
           
           {/* Reuniões do Dia Selecionado */}
-          <div className="bg-white dark:bg-[#1E2538] rounded-2xl p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-4">
+          <div className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm space-y-4">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800/80">
               <div>
                 <h3 className="font-bold text-slate-800 dark:text-white text-sm">Reuniões do Dia</h3>
@@ -277,7 +277,7 @@ export default function CalendarPage() {
 
           {/* Formulário de Agendamento Manual */}
           {showAddForm && (
-            <div className="bg-white dark:bg-[#1E2538] rounded-2xl p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm animate-fadeIn">
+            <div className="bg-white dark:bg-[#1E2538] rounded-lg p-6 border border-slate-200/60 dark:border-slate-850 shadow-sm animate-fadeIn">
               <h3 className="font-bold text-slate-800 dark:text-white text-sm mb-4">Novo Agendamento</h3>
               <form onSubmit={handleManualSubmit} className="space-y-4">
                 <div>

@@ -39,7 +39,7 @@ const CustomNode: React.FC<NodeProps> = ({ data }) => {
 
 
   return (
-    <div className={`min-w-[190px] rounded-xl shadow-lg border bg-white dark:bg-[#1E2538] transition-all hover:scale-105 duration-200 overflow-hidden ${
+    <div className={`min-w-[190px] rounded-md shadow-lg border bg-white dark:bg-[#1E2538] transition-all hover:scale-105 duration-200 overflow-hidden ${
       isRoot 
         ? 'border-2 border-[#C5A85A] ring-2 ring-[#C5A85A]/20' 
         : 'border-slate-200 dark:border-slate-800'
@@ -221,7 +221,7 @@ export default function OrganizationalChart() {
         </div>
 
         {/* Informações Rápidas */}
-        <div className="flex items-center gap-3 text-xs bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-355 px-4 py-2 rounded-xl border border-slate-200/40 dark:border-slate-700/40">
+        <div className="flex items-center gap-3 text-xs bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-355 px-4 py-2 rounded-md border border-slate-200/40 dark:border-slate-700/40">
           <GitPullRequest className="w-4 h-4 text-[#C5A85A]" />
           <span>Total de Setores: <strong>{departments.length}</strong></span>
         </div>
@@ -240,14 +240,14 @@ export default function OrganizationalChart() {
 
       {/* Feedback de IA */}
       {aiFeedback && (
-        <div className="bg-[#C5A85A]/10 border border-[#C5A85A]/35 text-[#C5A85A] px-4 py-3 rounded-xl flex items-center gap-2 text-xs font-semibold shrink-0 animate-fadeIn">
+        <div className="bg-[#C5A85A]/10 border border-[#C5A85A]/35 text-[#C5A85A] px-4 py-3 rounded-md flex items-center gap-2 text-xs font-semibold shrink-0 animate-fadeIn">
           <Sparkles className="w-4 h-4 fill-[#C5A85A]/20" />
           <span>IA: {aiFeedback}</span>
         </div>
       )}
 
       {/* Tela do Organograma (React Flow) */}
-      <div className="flex-1 bg-white dark:bg-[#161B29] border border-slate-200/60 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm relative min-h-[350px]">
+      <div className="flex-1 bg-white dark:bg-[#161B29] border border-slate-200/60 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm relative min-h-[350px]">
         
         {/* Banner informativo de navegação no organograma */}
         <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md text-white text-[10px] px-3 py-1.5 rounded-full font-medium shadow-md">
