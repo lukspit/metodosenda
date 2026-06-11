@@ -46,6 +46,20 @@ export default function ActionPlansPage() {
   // Controle de accordions abertos (objetivos)
   const [expandedObjectives, setExpandedObjectives] = useState<Record<string, boolean>>({});
 
+  // Estado do Toast
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast(null);
+    setTimeout(() => {
+      setToast({ message, type });
+    }, 50);
+    // Timeout para fechar
+    const timer = setTimeout(() => {
+      setToast(prev => prev?.message === message ? null : prev);
+    }, 3000);
+  };
+
   // Estados dos Modais
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<ActionPlan | null>(null);
@@ -222,8 +236,13 @@ export default function ActionPlansPage() {
     const confirm = window.confirm(`Tem certeza que deseja excluir o plano de ação "${name}"?`);
     if (confirm) {
       const success = await deleteActionPlan(id);
-      if (success && activePlanId === id) {
-        setActivePlanId(null);
+      if (success) {
+        showToast('Plano de ação removido com sucesso!', 'success');
+        if (activePlanId === id) {
+          setActivePlanId(null);
+        }
+      } else {
+        showToast('Erro ao excluir o plano de ação.', 'error');
       }
     }
   };
@@ -236,40 +255,36 @@ export default function ActionPlansPage() {
     setModalLoading(true);
     let success = false;
 
-    if (selectedPlan) {
-      const dataPayload = {
-        name: planName,
-        description: planDescription,
-        due_date: planDueDate,
-        responsible_id: planRespId || null,
-        approver_id: planApprId || null,
-        department_id: planDeptId || null,
-        status: planStatus,
-        progress: planProgress,
-        objectives: selectedPlan.objectives || []
-      };
-      success = await updateActionPlan(selectedPlan.id, dataPayload);
+    // Fechar modal e exibir toast imediatamente para UX instantânea
+    setIsModalOpen(false);
+    showToast(selectedPlan ? 'Plano de ação atualizado!' : 'Plano de ação criado com sucesso!', 'success');
+
+    const isEditing = !!selectedPlan;
+    const planId = selectedPlan?.id;
+    const objectivesList = selectedPlan?.objectives || [];
+
+    const dataPayload = {
+      name: planName,
+      description: planDescription,
+      due_date: planDueDate,
+      responsible_id: planRespId || null,
+      approver_id: planApprId || null,
+      department_id: planDeptId || null,
+      status: isEditing ? planStatus : ('pendente' as const),
+      progress: isEditing ? planProgress : 0,
+      objectives: objectivesList
+    };
+
+    if (isEditing && planId) {
+      success = await updateActionPlan(planId, dataPayload);
     } else {
-      const dataPayload = {
-        name: planName,
-        description: planDescription,
-        due_date: planDueDate,
-        responsible_id: planRespId || null,
-        approver_id: planApprId || null,
-        department_id: planDeptId || null,
-        status: 'pendente' as const,
-        progress: 0,
-        objectives: []
-      };
       success = await createActionPlan(dataPayload);
     }
 
     setModalLoading(false);
-    if (success) {
-      setIsModalOpen(false);
-      setSelectedPlan(null);
-    } else {
-      alert('Erro ao salvar o plano de ação.');
+    setSelectedPlan(null);
+    if (!success) {
+      showToast('Erro ao salvar o plano de ação no servidor.', 'error');
     }
   };
 
@@ -288,7 +303,7 @@ export default function ActionPlansPage() {
     });
 
     if (!success) {
-      alert('Erro ao atualizar no banco de dados.');
+      showToast('Erro ao atualizar no banco de dados.', 'error');
     }
   };
 
@@ -320,6 +335,7 @@ export default function ActionPlansPage() {
     const currentObjectives = activePlan.objectives || [];
     const updatedObjectives = currentObjectives.filter(obj => obj.id !== objectiveId);
 
+    showToast('Objetivo removido com sucesso!', 'success');
     await handleUpdateObjectives(activePlanId, updatedObjectives);
   };
 
@@ -333,7 +349,13 @@ export default function ActionPlansPage() {
     const currentObjectives = activePlan.objectives || [];
     let updatedObjectives: ActionPlanObjective[];
 
-    if (selectedObjective) {
+    const isEditing = !!selectedObjective;
+
+    // Fechar modal e exibir toast imediatamente para UX reativa
+    setIsObjectiveModalOpen(false);
+    showToast(isEditing ? 'Objetivo atualizado!' : 'Objetivo adicionado com sucesso!', 'success');
+
+    if (isEditing) {
       updatedObjectives = currentObjectives.map(obj => {
         if (obj.id === selectedObjective.id) {
           return {
@@ -358,7 +380,6 @@ export default function ActionPlansPage() {
     }
 
     await handleUpdateObjectives(activePlanId, updatedObjectives);
-    setIsObjectiveModalOpen(false);
     setSelectedObjective(null);
   };
 
@@ -410,6 +431,7 @@ export default function ActionPlansPage() {
       return obj;
     });
 
+    showToast('Ação removida com sucesso!', 'success');
     await handleUpdateObjectives(activePlanId, updatedObjectives);
   };
 
@@ -420,11 +442,17 @@ export default function ActionPlansPage() {
     const activePlan = actionPlans.find(p => p.id === activePlanId);
     if (!activePlan) return;
 
+    const isEditing = !!selectedAction;
+
+    // Fechar modal e exibir toast imediatamente para UX reativa
+    setIsActionModalOpen(false);
+    showToast(isEditing ? 'Ação atualizada!' : 'Ação adicionada com sucesso!', 'success');
+
     const currentObjectives = activePlan.objectives || [];
     const updatedObjectives = currentObjectives.map(obj => {
       if (obj.id === activeObjectiveId) {
         let updatedActions: ActionPlanAction[];
-        if (selectedAction) {
+        if (isEditing) {
           updatedActions = obj.actions.map(act => {
             if (act.id === selectedAction.id) {
               return {
@@ -464,7 +492,6 @@ export default function ActionPlansPage() {
     });
 
     await handleUpdateObjectives(activePlanId, updatedObjectives);
-    setIsActionModalOpen(false);
     setSelectedAction(null);
   };
 
@@ -474,6 +501,20 @@ export default function ActionPlansPage() {
 
     const activePlan = actionPlans.find(p => p.id === activePlanId);
     if (!activePlan) return;
+
+    // Achar o status atual da ação para exibir um toast legal
+    let isNowCompleted = false;
+    activePlan.objectives?.forEach(o => {
+      if (o.id === objectiveId) {
+        o.actions.forEach(a => {
+          if (a.id === actionId) {
+            isNowCompleted = a.status !== 'OK';
+          }
+        });
+      }
+    });
+
+    showToast(isNowCompleted ? 'Ação concluída!' : 'Ação reaberta!', 'success');
 
     const currentObjectives = activePlan.objectives || [];
     const updatedObjectives = currentObjectives.map(obj => {
@@ -555,6 +596,14 @@ export default function ActionPlansPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn font-sans pb-16">
+      
+      {toast && (
+        <div className="fixed bottom-20 md:bottom-6 right-6 left-6 md:left-auto md:max-w-xs z-50 bg-[#1E2538] text-white border border-slate-700 p-3.5 rounded-lg shadow-xl flex items-center gap-2.5 animate-slideUp text-xs font-semibold">
+          {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+          {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />}
+          <span>{toast.message}</span>
+        </div>
+      )}
       
       {!selectedActivePlan ? (
         // ================= TELA 1: LISTAGEM DE PLANOS DE AÇÃO =================
