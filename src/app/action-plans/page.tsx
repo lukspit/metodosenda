@@ -41,7 +41,7 @@ export default function ActionPlansPage() {
   const [searchText, setSearchText] = useState<string>('');
 
   // Plano de Ação ativo/selecionado para visualização de objetivos
-  const [activePlanId, setActivePlanId] = useState<string | null>(actionPlans[0]?.id || null);
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
 
   // Controle de accordions abertos (objetivos)
   const [expandedObjectives, setExpandedObjectives] = useState<Record<string, boolean>>({});
@@ -555,234 +555,236 @@ export default function ActionPlansPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn font-sans pb-16">
-      {/* Cabeçalho */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Planos de Ação</h1>
-          <p className="text-sm text-slate-500 mt-1">Controle e andamento das metas, objetivos e ações estratégicas.</p>
-        </div>
-
-        <button
-          onClick={handleCreateClick}
-          className="flex items-center gap-2 bg-[#1E2538] hover:bg-[#2c3752] text-white text-xs font-semibold px-4 py-2.5 rounded-md shadow self-start sm:self-auto transition-colors"
-        >
-          <Plus className="w-4 h-4 text-[#C5A85A]" />
-          Novo Plano de Ação
-        </button>
-      </div>
-
-      {/* Input de IA Contextual */}
-      <SmartInput
-        context="action_plans"
-        placeholder="Escreva ou fale o plano de ação... (ex: 'Adicionar plano para Fabricio ajustar as metas de vendas até sexta-feira')"
-        onSuccess={handleAISuccess}
-        existingData={{ departments, profiles }}
-        suggestions={suggestions}
-      />
-
-      {/* Filtros */}
-      <div className="bg-white p-5 rounded-lg border border-slate-200/60 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-        <input
-          type="text"
-          placeholder="Filtrar por nome ou descrição..."
-          value={searchText}
-          onChange={e => setSearchText(e.target.value)}
-          className="bg-slate-50 text-xs text-slate-700 border border-slate-200 px-4 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-[#C5A85A] w-full md:w-64"
-        />
-
-        <div className="flex flex-wrap gap-3 w-full md:w-auto justify-end">
-          <select
-            value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value)}
-            className="bg-slate-50 text-xs text-slate-750 border border-slate-200 px-4 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
-          >
-            <option value="all">Todos os Status</option>
-            <option value="pendente">Pendente</option>
-            <option value="em_andamento">Em Andamento</option>
-            <option value="concluido">Concluído</option>
-            <option value="atrasado">Atrasado</option>
-          </select>
-
-          <select
-            value={filterResp}
-            onChange={e => setFilterResp(e.target.value)}
-            className="bg-slate-50 text-xs text-slate-755 border border-slate-200 px-4 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
-          >
-            <option value="all">Qualquer Responsável</option>
-            {profiles.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Grid de Planos de Ação */}
-      <div className="grid grid-cols-1 gap-4">
-        {filteredPlans.length > 0 ? (
-          filteredPlans.map((plan) => {
-            const deptName = departments.find(d => d.id === plan.department_id)?.name || 'Geral';
-            const { 
-              totalObjectives, 
-              totalCost, 
-              progressVal, 
-              computedStatus, 
-              isCalculated 
-            } = getPlanSummary(plan);
-            
-            const isSelected = activePlanId === plan.id;
-            const responsible = profiles.find(p => p.id === plan.responsible_id)?.name || 'Sem responsável';
-
-            return (
-              <div 
-                key={plan.id}
-                onClick={() => setActivePlanId(plan.id)}
-                className={`bg-white rounded-lg p-4 md:p-5 border cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all duration-200 relative group ${
-                  isSelected 
-                    ? 'border-[#C5A85A]/80 shadow-md ring-1 ring-[#C5A85A]/30' 
-                    : 'border-slate-200/60 shadow-sm hover:shadow-md'
-                }`}
-              >
-                {/* Botões Rápidos de Editar/Excluir */}
-                <div className="absolute top-4 right-4 flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-white/95 p-1 rounded border border-slate-100 shadow-sm" onClick={e => e.stopPropagation()}>
-                  <button
-                    onClick={() => handleEditClick(plan)}
-                    className="p-1 rounded hover:bg-slate-150 text-slate-500 hover:text-slate-800 transition-colors"
-                    title="Editar Plano de Ação"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(plan.id, plan.name)}
-                    className="p-1 rounded hover:bg-rose-50 text-rose-500 transition-colors"
-                    title="Excluir Plano de Ação"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {/* Info Geral */}
-                <div className="flex-1 space-y-2 pr-12">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                      {deptName}
-                    </span>
-                    <span className={`px-2 py-0.5 border rounded text-[9px] font-bold uppercase tracking-wider ${getStatusStyle(computedStatus)}`}>
-                      {computedStatus === 'em_andamento' ? 'Em andamento' : computedStatus === 'concluido' ? 'Concluído' : computedStatus === 'atrasado' ? 'Atrasado' : 'Pendente'}
-                    </span>
-                    {totalObjectives > 0 && (
-                      <span className="text-[9px] bg-[#C5A85A]/10 text-[#a3863d] px-2 py-0.5 rounded font-bold">
-                        {totalObjectives} {totalObjectives === 1 ? 'Objetivo' : 'Objetivos'}
-                      </span>
-                    )}
-                    {totalCost > 0 && (
-                      <span className="text-[9px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-100 font-bold">
-                        Custo: {formatCurrency(totalCost)}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="font-bold text-slate-800 text-base leading-tight group-hover:text-[#1E2538] transition-colors">{plan.name}</h3>
-                  <p className="text-xs text-slate-400 font-light max-w-2xl">{plan.description || 'Sem descrição'}</p>
-                </div>
-
-                {/* Datas e Pessoas */}
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs shrink-0 w-full md:w-auto" onClick={e => e.stopPropagation()}>
-                  <div className="flex items-center gap-1.5 text-slate-500">
-                    <CalendarDays className="w-4 h-4 text-[#C5A85A]" />
-                    <div>
-                      <p className="text-[8px] uppercase tracking-wider text-slate-400 font-bold">Prazo</p>
-                      <p className="font-semibold">
-                        {plan.due_date ? new Date(plan.due_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Sem data'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-slate-500">
-                    <User className="w-4 h-4 text-[#C5A85A]" />
-                    <div>
-                      <p className="text-[8px] uppercase tracking-wider text-slate-400 font-bold">Responsável</p>
-                      <p className="font-semibold text-slate-700 max-w-[120px] truncate">{responsible}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slider de Progresso Interativo / Fixo */}
-                <div className="space-y-1 w-full md:w-48 shrink-0" onClick={e => e.stopPropagation()}>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-slate-400 text-[10px] uppercase font-bold">Progresso</span>
-                    <span className="font-bold text-[#1E2538]">{progressVal}%</span>
-                  </div>
-                  
-                  {isCalculated ? (
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden relative">
-                      <div 
-                        className="h-full bg-[#C5A85A] rounded-full transition-all duration-300"
-                        style={{ width: `${progressVal}%` }}
-                      />
-                    </div>
-                  ) : (
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="5"
-                      value={progressVal}
-                      onChange={(e) => handleProgressChange(plan.id, Number(e.target.value), plan.status)}
-                      className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#C5A85A]"
-                    />
-                  )}
-
-                  <div className="flex justify-between items-center pt-0.5">
-                    {isCalculated ? (
-                      <span className="text-[9px] text-slate-400 italic">Progresso automático</span>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleStatusClick(plan.id, 'em_andamento')}
-                          className={`text-[9px] px-1.5 py-0.5 rounded font-bold transition-all ${
-                            plan.status === 'em_andamento' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                          }`}
-                        >
-                          Iniciar
-                        </button>
-                        <button
-                          onClick={() => handleStatusClick(plan.id, 'concluido')}
-                          className={`text-[9px] px-1.5 py-0.5 rounded font-bold transition-all flex items-center gap-0.5 ${
-                            plan.status === 'concluido' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                          }`}
-                        >
-                          <Check className="w-2.5 h-2.5" /> Concluir
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="text-center py-12 bg-white rounded-lg border border-dashed border-slate-300 text-slate-400 text-sm shadow-sm">
-            Nenhum plano de ação encontrado com os filtros atuais.
-          </div>
-        )}
-      </div>
-
-      {/* Painel do Plano de Ação Selecionado: Objetivos (Nível 2) e Ações (Nível 3) */}
-      {selectedActivePlan && activePlanSummary && (
-        <div className="bg-white rounded-lg border border-slate-200/60 shadow-sm overflow-hidden p-6 space-y-6 animate-fadeIn">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-[#C5A85A]" />
-                <h2 className="text-lg font-bold text-slate-800">Metas e Planejamento Detalhado</h2>
-              </div>
-              <p className="text-xs text-slate-500">
-                Plano selecionado: <strong className="text-slate-700 font-semibold">{selectedActivePlan.name}</strong>
-              </p>
+      
+      {!selectedActivePlan ? (
+        // ================= TELA 1: LISTAGEM DE PLANOS DE AÇÃO =================
+        <>
+          {/* Cabeçalho */}
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Planos de Ação</h1>
+              <p className="text-sm text-slate-500 mt-1">Controle e andamento das metas, objetivos e ações estratégicas.</p>
             </div>
 
-            <div className="flex flex-wrap gap-2 sm:items-center">
-              <span className="text-xs bg-slate-50 border border-slate-200 rounded px-2.5 py-1 text-slate-600 font-medium">
-                Custo Total: <strong className="text-emerald-700 font-bold">{formatCurrency(activePlanSummary.totalCost)}</strong>
-              </span>
+            <button
+              onClick={handleCreateClick}
+              className="flex items-center gap-2 bg-[#1E2538] hover:bg-[#2c3752] text-white text-xs font-semibold px-4 py-2.5 rounded-md shadow self-start sm:self-auto transition-colors"
+            >
+              <Plus className="w-4 h-4 text-[#C5A85A]" />
+              Novo Plano de Ação
+            </button>
+          </div>
+
+          {/* Input de IA Contextual */}
+          <SmartInput
+            context="action_plans"
+            placeholder="Escreva ou fale o plano de ação... (ex: 'Adicionar plano para Fabricio ajustar as metas de vendas até sexta-feira')"
+            onSuccess={handleAISuccess}
+            existingData={{ departments, profiles }}
+            suggestions={suggestions}
+          />
+
+          {/* Filtros */}
+          <div className="bg-white p-5 rounded-lg border border-slate-200/60 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+            <input
+              type="text"
+              placeholder="Filtrar por nome ou descrição..."
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              className="bg-slate-50 text-xs text-slate-700 border border-slate-200 px-4 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-[#C5A85A] w-full md:w-64"
+            />
+
+            <div className="flex flex-wrap gap-3 w-full md:w-auto justify-end">
+              <select
+                value={filterStatus}
+                onChange={e => setFilterStatus(e.target.value)}
+                className="bg-slate-50 text-xs text-slate-750 border border-slate-200 px-4 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+              >
+                <option value="all">Todos os Status</option>
+                <option value="pendente">Pendente</option>
+                <option value="em_andamento">Em Andamento</option>
+                <option value="concluido">Concluído</option>
+                <option value="atrasado">Atrasado</option>
+              </select>
+
+              <select
+                value={filterResp}
+                onChange={e => setFilterResp(e.target.value)}
+                className="bg-slate-50 text-xs text-slate-755 border border-slate-200 px-4 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
+              >
+                <option value="all">Qualquer Responsável</option>
+                {profiles.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Grid de Planos de Ação */}
+          <div className="grid grid-cols-1 gap-4">
+            {filteredPlans.length > 0 ? (
+              filteredPlans.map((plan) => {
+                const deptName = departments.find(d => d.id === plan.department_id)?.name || 'Geral';
+                const { 
+                  totalObjectives, 
+                  totalCost, 
+                  progressVal, 
+                  computedStatus, 
+                  isCalculated 
+                } = getPlanSummary(plan);
+                
+                const responsible = profiles.find(p => p.id === plan.responsible_id)?.name || 'Sem responsável';
+
+                return (
+                  <div 
+                    key={plan.id}
+                    onClick={() => setActivePlanId(plan.id)}
+                    className="bg-white rounded-lg p-4 md:p-5 border border-slate-200/60 shadow-sm cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md hover:border-[#C5A85A]/50 transition-all duration-200 relative group border-l-4 border-l-transparent"
+                  >
+                    {/* Botões Rápidos de Editar/Excluir */}
+                    <div className="absolute top-4 right-4 flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-white/95 p-1 rounded border border-slate-100 shadow-sm" onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleEditClick(plan)}
+                        className="p-1 rounded hover:bg-slate-150 text-slate-500 hover:text-slate-800 transition-colors"
+                        title="Editar Plano de Ação"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(plan.id, plan.name)}
+                        className="p-1 rounded hover:bg-rose-50 text-rose-500 transition-colors"
+                        title="Excluir Plano de Ação"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Info Geral */}
+                    <div className="flex-1 space-y-2 pr-12">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                          {deptName}
+                        </span>
+                        <span className={`px-2 py-0.5 border rounded text-[9px] font-bold uppercase tracking-wider ${getStatusStyle(computedStatus)}`}>
+                          {computedStatus === 'em_andamento' ? 'Em andamento' : computedStatus === 'concluido' ? 'Concluído' : computedStatus === 'atrasado' ? 'Atrasado' : 'Pendente'}
+                        </span>
+                        {totalObjectives > 0 && (
+                          <span className="text-[9px] bg-[#C5A85A]/10 text-[#a3863d] px-2 py-0.5 rounded font-bold">
+                            {totalObjectives} {totalObjectives === 1 ? 'Objetivo' : 'Objetivos'}
+                          </span>
+                        )}
+                        {totalCost > 0 && (
+                          <span className="text-[9px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-100 font-bold">
+                            Custo: {formatCurrency(totalCost)}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-bold text-slate-850 text-base leading-tight group-hover:text-[#1E2538] transition-colors">{plan.name}</h3>
+                      <p className="text-xs text-slate-400 font-light max-w-2xl">{plan.description || 'Sem descrição'}</p>
+                    </div>
+
+                    {/* Datas e Pessoas */}
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs shrink-0 w-full md:w-auto" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center gap-1.5 text-slate-500">
+                        <CalendarDays className="w-4 h-4 text-[#C5A85A]" />
+                        <div>
+                          <p className="text-[8px] uppercase tracking-wider text-slate-400 font-bold">Prazo</p>
+                          <p className="font-semibold text-slate-750">
+                            {plan.due_date ? new Date(plan.due_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Sem data'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-500">
+                        <User className="w-4 h-4 text-[#C5A85A]" />
+                        <div>
+                          <p className="text-[8px] uppercase tracking-wider text-slate-400 font-bold">Responsável</p>
+                          <p className="font-semibold text-slate-700 max-w-[120px] truncate">{responsible}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Slider de Progresso Interativo / Fixo */}
+                    <div className="space-y-1 w-full md:w-48 shrink-0" onClick={e => e.stopPropagation()}>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-400 text-[10px] uppercase font-bold">Progresso</span>
+                        <span className="font-bold text-[#1E2538]">{progressVal}%</span>
+                      </div>
+                      
+                      {isCalculated ? (
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden relative">
+                          <div 
+                            className="h-full bg-[#C5A85A] rounded-full transition-all duration-300"
+                            style={{ width: `${progressVal}%` }}
+                          />
+                        </div>
+                      ) : (
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="5"
+                          value={progressVal}
+                          onChange={(e) => handleProgressChange(plan.id, Number(e.target.value), plan.status)}
+                          className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#C5A85A]"
+                        />
+                      )}
+
+                      <div className="flex justify-between items-center pt-0.5">
+                        {isCalculated ? (
+                          <span className="text-[9px] text-slate-400 italic">Progresso automático</span>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleStatusClick(plan.id, 'em_andamento')}
+                              className={`text-[9px] px-1.5 py-0.5 rounded font-bold transition-all ${
+                                plan.status === 'em_andamento' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                              }`}
+                            >
+                              Iniciar
+                            </button>
+                            <button
+                              onClick={() => handleStatusClick(plan.id, 'concluido')}
+                              className={`text-[9px] px-1.5 py-0.5 rounded font-bold transition-all flex items-center gap-0.5 ${
+                                plan.status === 'concluido' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                              }`}
+                            >
+                              <Check className="w-2.5 h-2.5" /> Concluir
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-12 bg-white rounded-lg border border-dashed border-slate-300 text-slate-400 text-sm shadow-sm">
+                Nenhum plano de ação encontrado com os filtros atuais.
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        // ================= TELA 2: OBJETIVOS E AÇÕES DETALHADOS =================
+        <div className="space-y-6 animate-fadeIn">
+          {/* Cabeçalho Especial de Voltar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <button
+              onClick={() => setActivePlanId(null)}
+              className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-800 bg-white border border-slate-200 hover:border-slate-300 px-3.5 py-2 rounded-md shadow-sm transition-colors self-start font-semibold"
+            >
+              <X className="w-3.5 h-3.5 text-slate-500" />
+              Voltar para todos os planos
+            </button>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleEditClick(selectedActivePlan)}
+                className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3.5 py-2 rounded-md shadow-sm transition-colors"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                Editar Plano
+              </button>
               <button
                 onClick={handleCreateObjectiveClick}
                 className="flex items-center gap-1.5 bg-[#C5A85A] hover:bg-[#a3863d] text-white text-xs font-semibold px-3.5 py-2 rounded-md shadow transition-colors"
@@ -793,219 +795,277 @@ export default function ActionPlansPage() {
             </div>
           </div>
 
-          {/* Objetivos */}
-          <div className="space-y-4">
-            {selectedActivePlan.objectives && selectedActivePlan.objectives.length > 0 ? (
-              selectedActivePlan.objectives.map((objective) => {
-                const isExpanded = !!expandedObjectives[objective.id];
-                const { totalActions, completedActions, totalCost, progressVal } = getObjectiveSummary(objective);
-                
-                const today = new Date().toISOString().split('T')[0];
-                const isAtrasado = objective.status !== 'OK' && objective.due_date < today;
-                
-                const objResponsible = profiles.find(p => p.id === objective.responsible_id)?.name || 'Sem responsável';
-
-                return (
-                  <div 
-                    key={objective.id} 
-                    className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50/50 shadow-sm"
-                  >
-                    {/* Cabeçalho do Objetivo (Accordion Trigger) */}
-                    <div 
-                      onClick={() => toggleObjectiveExpand(objective.id)}
-                      className="p-4 bg-white flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/30 transition-colors select-none"
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
-                        )}
-                        <div className="min-w-0">
-                          <h4 className="font-bold text-sm text-slate-800 truncate">{objective.name}</h4>
-                          <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <span className={`px-2 py-0.2 border text-[8px] font-extrabold uppercase rounded ${getObjectiveStatusStyle(objective.status, isAtrasado)}`}>
-                              {objective.status === 'OK' ? 'OK' : isAtrasado ? 'Atrasado' : 'Em Andamento'}
-                            </span>
-                            {totalActions > 0 && (
-                              <span className="text-[9px] text-slate-500 font-medium">
-                                {completedActions}/{totalActions} ações ({progressVal}%)
-                              </span>
-                            )}
-                            {totalCost > 0 && (
-                              <span className="text-[9px] text-emerald-700 font-bold">
-                                {formatCurrency(totalCost)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Datas, Responsáveis e Controles */}
-                      <div className="flex items-center gap-4 shrink-0 self-end md:self-auto text-xs" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-4 text-slate-500 text-xs">
-                          <div className="text-right">
-                            <p className="text-[7px] uppercase font-bold text-slate-400">Prazo Limite</p>
-                            <p className="font-semibold text-slate-650">
-                              {objective.due_date ? new Date(objective.due_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Sem data'}
-                            </p>
-                          </div>
-                          <div className="text-right border-l border-slate-200 pl-3">
-                            <p className="text-[7px] uppercase font-bold text-slate-400">Responsável</p>
-                            <p className="font-semibold text-slate-700 truncate max-w-[100px]">{objResponsible}</p>
-                          </div>
-                        </div>
-
-                        {/* Botões de Ação */}
-                        <div className="flex items-center gap-1 border-l border-slate-200 pl-3">
-                          <button
-                            onClick={() => handleEditObjectiveClick(objective)}
-                            className="p-1 rounded text-slate-450 hover:text-slate-800 hover:bg-slate-100 transition-all"
-                            title="Editar Objetivo"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteObjectiveClick(objective.id, objective.name)}
-                            className="p-1 rounded text-rose-450 hover:text-rose-600 hover:bg-rose-50 transition-all"
-                            title="Excluir Objetivo"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Conteúdo do Objetivo: Lista de Ações (Accordion Content) */}
-                    {isExpanded && (
-                      <div className="p-4 bg-slate-50/50 border-t border-slate-100 space-y-4">
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-slate-200 text-xs">
-                            <thead>
-                              <tr className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">
-                                <th className="py-2 px-3 text-left w-12">Status</th>
-                                <th className="py-2 px-3 text-left">Ação</th>
-                                <th className="py-2 px-3 text-left">Responsável</th>
-                                <th className="py-2 px-3 text-left">Prazo</th>
-                                <th className="py-2 px-3 text-right">Custo</th>
-                                <th className="py-2 px-3 text-right w-20">Ações</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
-                              {objective.actions && objective.actions.length > 0 ? (
-                                objective.actions.map((action) => {
-                                  const actResponsible = profiles.find(p => p.id === action.responsible_id)?.name || 'Sem responsável';
-                                  const isActAtrasada = action.status !== 'OK' && action.due_date < today;
-
-                                  return (
-                                    <tr key={action.id} className="hover:bg-slate-50/60 transition-colors">
-                                      {/* Status Rápido Checkbox */}
-                                      <td className="py-2.5 px-3">
-                                        <button
-                                          onClick={() => handleToggleActionStatus(objective.id, action.id)}
-                                          className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-                                            action.status === 'OK'
-                                              ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-200'
-                                              : 'bg-white border-slate-300 hover:border-[#C5A85A] text-transparent'
-                                          }`}
-                                          title={action.status === 'OK' ? 'Marcar em Andamento' : 'Marcar Concluído'}
-                                        >
-                                          <Check className="w-3 h-3 text-white" />
-                                        </button>
-                                      </td>
-
-                                      {/* Nome da Ação */}
-                                      <td className="py-2.5 px-3">
-                                        <span className={`font-semibold text-slate-800 ${
-                                          action.status === 'OK' ? 'line-through text-slate-400 font-normal' : ''
-                                        }`}>
-                                          {action.name}
-                                        </span>
-                                        {isActAtrasada && (
-                                          <span className="ml-2 text-[8px] bg-rose-50 text-rose-600 border border-rose-100 px-1.5 py-0.2 rounded font-bold uppercase">
-                                            Atrasada
-                                          </span>
-                                        )}
-                                      </td>
-
-                                      {/* Responsável */}
-                                      <td className="py-2.5 px-3 text-slate-550">
-                                        {actResponsible}
-                                      </td>
-
-                                      {/* Prazo */}
-                                      <td className="py-2.5 px-3 text-slate-550 font-medium">
-                                        {action.due_date ? new Date(action.due_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Sem data'}
-                                      </td>
-
-                                      {/* Custo */}
-                                      <td className="py-2.5 px-3 text-right font-bold text-slate-800">
-                                        {action.cost > 0 ? formatCurrency(action.cost) : 'R$ 0,00'}
-                                      </td>
-
-                                      {/* Ações na Linha */}
-                                      <td className="py-2.5 px-3 text-right">
-                                        <div className="flex items-center justify-end gap-1">
-                                          <button
-                                            onClick={() => handleEditActionClick(objective.id, action)}
-                                            className="p-1 rounded text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-all"
-                                            title="Editar Ação"
-                                          >
-                                            <Edit2 className="w-3 h-3" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleDeleteActionClick(objective.id, action.id, action.name)}
-                                            className="p-1 rounded text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
-                                            title="Excluir Ação"
-                                          >
-                                            <Trash2 className="w-3 h-3" />
-                                          </button>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  );
-                                })
-                              ) : (
-                                <tr>
-                                  <td colSpan={6} className="py-4 text-center text-slate-400 text-[11px] bg-white italic">
-                                    Nenhuma ação vinculada a este objetivo.
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-
-                        {/* Botão de Adicionar Ação dentro do objetivo */}
-                        <div className="flex justify-end pt-1">
-                          <button
-                            onClick={() => handleCreateActionClick(objective.id)}
-                            className="flex items-center gap-1 text-[10px] text-[#C5A85A] hover:text-[#a3863d] font-bold py-1 px-2.5 rounded hover:bg-white border border-[#C5A85A]/20 transition-all shadow-xs"
-                          >
-                            <Plus className="w-3 h-3" />
-                            Nova Ação
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg text-slate-400 bg-slate-50/30">
-                <FolderOpen className="w-8 h-8 mx-auto text-slate-350 mb-2" />
-                <p className="text-sm font-semibold">Sem objetivos cadastrados</p>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                  Este plano de ação não possui objetivos estruturados. Adicione o primeiro objetivo para gerenciar suas ações.
-                </p>
-                <button
-                  onClick={handleCreateObjectiveClick}
-                  className="mt-4 inline-flex items-center gap-1 bg-white hover:bg-slate-50 text-[#C5A85A] border border-slate-200 hover:border-[#C5A85A]/45 text-xs font-bold px-3 py-1.5 rounded-md shadow-xs transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Adicionar Primeiro Objetivo
-                </button>
+          {/* Card Resumo do Plano de Ação Selecionado */}
+          <div className="bg-white rounded-lg border border-slate-200/60 p-5 md:p-6 shadow-sm space-y-4">
+            <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
+              <div className="space-y-2 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                    {departments.find(d => d.id === selectedActivePlan.department_id)?.name || 'Geral'}
+                  </span>
+                  <span className={`px-2 py-0.5 border rounded text-[9px] font-bold uppercase tracking-wider ${getStatusStyle(activePlanSummary?.computedStatus || 'pendente')}`}>
+                    {activePlanSummary?.computedStatus === 'em_andamento' ? 'Em andamento' : activePlanSummary?.computedStatus === 'concluido' ? 'Concluído' : activePlanSummary?.computedStatus === 'atrasado' ? 'Atrasado' : 'Pendente'}
+                  </span>
+                  <span className="text-[9px] bg-[#C5A85A]/10 text-[#a3863d] px-2 py-0.5 rounded font-bold">
+                    {activePlanSummary?.totalObjectives || 0} {(activePlanSummary?.totalObjectives || 0) === 1 ? 'Objetivo' : 'Objetivos'}
+                  </span>
+                </div>
+                <h2 className="text-xl font-bold text-slate-855 leading-tight">{selectedActivePlan.name}</h2>
+                <p className="text-xs text-slate-400 font-light">{selectedActivePlan.description || 'Sem descrição'}</p>
               </div>
-            )}
+
+              {/* Informações consolidadas */}
+              <div className="flex flex-wrap gap-4 text-xs shrink-0 bg-slate-50/70 p-4 rounded-lg border border-slate-100">
+                <div className="text-left">
+                  <p className="text-[7px] uppercase font-bold text-slate-400">Responsável</p>
+                  <p className="font-semibold text-slate-700 truncate max-w-[120px]">
+                    {profiles.find(p => p.id === selectedActivePlan.responsible_id)?.name || 'Sem responsável'}
+                  </p>
+                </div>
+                <div className="text-left border-l border-slate-200 pl-3">
+                  <p className="text-[7px] uppercase font-bold text-slate-400">Aprovador</p>
+                  <p className="font-semibold text-slate-700 truncate max-w-[120px]">
+                    {profiles.find(p => p.id === selectedActivePlan.approver_id)?.name || 'Sem aprovador'}
+                  </p>
+                </div>
+                <div className="text-left border-l border-slate-200 pl-3">
+                  <p className="text-[7px] uppercase font-bold text-slate-400">Custo Total</p>
+                  <p className="font-bold text-emerald-700">{formatCurrency(activePlanSummary?.totalCost || 0)}</p>
+                </div>
+                <div className="text-left border-l border-slate-200 pl-3">
+                  <p className="text-[7px] uppercase font-bold text-slate-400">Progresso Geral</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="font-bold text-slate-800">{activePlanSummary?.progressVal || 0}%</span>
+                    <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#C5A85A] rounded-full" style={{ width: `${activePlanSummary?.progressVal || 0}%` }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Painel do Plano de Ação Selecionado: Objetivos (Nível 2) e Ações (Nível 3) */}
+          <div className="bg-white rounded-lg border border-slate-200/60 shadow-sm overflow-hidden p-6 space-y-6">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+              <Target className="w-5 h-5 text-[#C5A85A]" />
+              <h3 className="text-base font-bold text-slate-850">Objetivos e Plano Tático</h3>
+            </div>
+
+            {/* Objetivos */}
+            <div className="space-y-4">
+              {selectedActivePlan.objectives && selectedActivePlan.objectives.length > 0 ? (
+                selectedActivePlan.objectives.map((objective) => {
+                  const isExpanded = !!expandedObjectives[objective.id];
+                  const { totalActions, completedActions, totalCost, progressVal } = getObjectiveSummary(objective);
+                  
+                  const today = new Date().toISOString().split('T')[0];
+                  const isAtrasado = objective.status !== 'OK' && objective.due_date < today;
+                  
+                  const objResponsible = profiles.find(p => p.id === objective.responsible_id)?.name || 'Sem responsável';
+
+                  return (
+                    <div 
+                      key={objective.id} 
+                      className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50/50 shadow-sm"
+                    >
+                      {/* Cabeçalho do Objetivo (Accordion Trigger) */}
+                      <div 
+                        onClick={() => toggleObjectiveExpand(objective.id)}
+                        className="p-4 bg-white flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/30 transition-colors select-none"
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-sm text-slate-800 truncate">{objective.name}</h4>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <span className={`px-2 py-0.2 border text-[8px] font-extrabold uppercase rounded ${getObjectiveStatusStyle(objective.status, isAtrasado)}`}>
+                                {objective.status === 'OK' ? 'OK' : isAtrasado ? 'Atrasado' : 'Em Andamento'}
+                              </span>
+                              {totalActions > 0 && (
+                                <span className="text-[9px] text-slate-500 font-medium">
+                                  {completedActions}/{totalActions} ações ({progressVal}%)
+                                </span>
+                              )}
+                              {totalCost > 0 && (
+                                <span className="text-[9px] text-emerald-700 font-bold">
+                                  {formatCurrency(totalCost)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Datas, Responsáveis e Controles */}
+                        <div className="flex items-center gap-4 shrink-0 self-end md:self-auto text-xs" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center gap-4 text-slate-500 text-xs">
+                            <div className="text-right">
+                              <p className="text-[7px] uppercase font-bold text-slate-400">Prazo Limite</p>
+                              <p className="font-semibold text-slate-650">
+                                {objective.due_date ? new Date(objective.due_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Sem data'}
+                              </p>
+                            </div>
+                            <div className="text-right border-l border-slate-200 pl-3">
+                              <p className="text-[7px] uppercase font-bold text-slate-400">Responsável</p>
+                              <p className="font-semibold text-slate-700 truncate max-w-[100px]">{objResponsible}</p>
+                            </div>
+                          </div>
+
+                          {/* Botões de Ação */}
+                          <div className="flex items-center gap-1 border-l border-slate-200 pl-3">
+                            <button
+                              onClick={() => handleEditObjectiveClick(objective)}
+                              className="p-1 rounded text-slate-450 hover:text-slate-800 hover:bg-slate-100 transition-all"
+                              title="Editar Objetivo"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteObjectiveClick(objective.id, objective.name)}
+                              className="p-1 rounded text-rose-450 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                              title="Excluir Objetivo"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Conteúdo do Objetivo: Lista de Ações (Accordion Content) */}
+                      {isExpanded && (
+                        <div className="p-4 bg-slate-50/50 border-t border-slate-100 space-y-4">
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-slate-200 text-xs">
+                              <thead>
+                                <tr className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">
+                                  <th className="py-2 px-3 text-left w-12">Status</th>
+                                  <th className="py-2 px-3 text-left">Ação</th>
+                                  <th className="py-2 px-3 text-left">Responsável</th>
+                                  <th className="py-2 px-3 text-left">Prazo</th>
+                                  <th className="py-2 px-3 text-right">Custo</th>
+                                  <th className="py-2 px-3 text-right w-20">Ações</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
+                                {objective.actions && objective.actions.length > 0 ? (
+                                  objective.actions.map((action) => {
+                                    const actResponsible = profiles.find(p => p.id === action.responsible_id)?.name || 'Sem responsável';
+                                    const isActAtrasada = action.status !== 'OK' && action.due_date < today;
+
+                                    return (
+                                      <tr key={action.id} className="hover:bg-slate-50/60 transition-colors">
+                                        {/* Status Rápido Checkbox */}
+                                        <td className="py-2.5 px-3">
+                                          <button
+                                            onClick={() => handleToggleActionStatus(objective.id, action.id)}
+                                            className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                                              action.status === 'OK'
+                                                ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-200'
+                                                : 'bg-white border-slate-300 hover:border-[#C5A85A] text-transparent'
+                                            }`}
+                                            title={action.status === 'OK' ? 'Marcar em Andamento' : 'Marcar Concluído'}
+                                          >
+                                            <Check className="w-3 h-3 text-white" />
+                                          </button>
+                                        </td>
+
+                                        {/* Nome da Ação */}
+                                        <td className="py-2.5 px-3">
+                                          <span className={`font-semibold text-slate-800 ${
+                                            action.status === 'OK' ? 'line-through text-slate-400 font-normal' : ''
+                                          }`}>
+                                            {action.name}
+                                          </span>
+                                          {isActAtrasada && (
+                                            <span className="ml-2 text-[8px] bg-rose-50 text-rose-600 border border-rose-100 px-1.5 py-0.2 rounded font-bold uppercase">
+                                              Atrasada
+                                            </span>
+                                          )}
+                                        </td>
+
+                                        {/* Responsável */}
+                                        <td className="py-2.5 px-3 text-slate-550">
+                                          {actResponsible}
+                                        </td>
+
+                                        {/* Prazo */}
+                                        <td className="py-2.5 px-3 text-slate-550 font-medium">
+                                          {action.due_date ? new Date(action.due_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Sem data'}
+                                        </td>
+
+                                        {/* Custo */}
+                                        <td className="py-2.5 px-3 text-right font-bold text-slate-800">
+                                          {action.cost > 0 ? formatCurrency(action.cost) : 'R$ 0,00'}
+                                        </td>
+
+                                        {/* Ações na Linha */}
+                                        <td className="py-2.5 px-3 text-right">
+                                          <div className="flex items-center justify-end gap-1">
+                                            <button
+                                              onClick={() => handleEditActionClick(objective.id, action)}
+                                              className="p-1 rounded text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-all"
+                                              title="Editar Ação"
+                                            >
+                                              <Edit2 className="w-3 h-3" />
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeleteActionClick(objective.id, action.id, action.name)}
+                                              className="p-1 rounded text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                                              title="Excluir Ação"
+                                            >
+                                              <Trash2 className="w-3 h-3" />
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })
+                                ) : (
+                                  <tr>
+                                    <td colSpan={6} className="py-4 text-center text-slate-400 text-[11px] bg-white italic">
+                                      Nenhuma ação vinculada a este objetivo.
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Botão de Adicionar Ação dentro do objetivo */}
+                          <div className="flex justify-end pt-1">
+                            <button
+                              onClick={() => handleCreateActionClick(objective.id)}
+                              className="flex items-center gap-1 text-[10px] text-[#C5A85A] hover:text-[#a3863d] font-bold py-1 px-2.5 rounded hover:bg-white border border-[#C5A85A]/20 transition-all shadow-xs"
+                            >
+                              <Plus className="w-3 h-3" />
+                              Nova Ação
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg text-slate-400 bg-slate-50/30">
+                  <FolderOpen className="w-8 h-8 mx-auto text-slate-350 mb-2" />
+                  <p className="text-sm font-semibold">Sem objetivos cadastrados</p>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    Este plano de ação não possui objetivos estruturados. Adicione o primeiro objetivo para gerenciar suas ações.
+                  </p>
+                  <button
+                    onClick={handleCreateObjectiveClick}
+                    className="mt-4 inline-flex items-center gap-1 bg-white hover:bg-slate-50 text-[#C5A85A] border border-slate-200 hover:border-[#C5A85A]/45 text-xs font-bold px-3 py-1.5 rounded-md shadow-xs transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Adicionar Primeiro Objetivo
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
