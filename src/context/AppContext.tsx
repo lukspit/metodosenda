@@ -141,6 +141,26 @@ export const parseIndicator = (dbInd: any): Indicator => {
   };
 };
 
+export interface ActionPlanAction {
+  id: string;
+  name: string;
+  due_date: string;
+  responsible_id: string | null;
+  responsible_name?: string;
+  cost: number;
+  status: 'OK' | 'ANDAMENTO';
+}
+
+export interface ActionPlanObjective {
+  id: string;
+  name: string;
+  due_date: string;
+  responsible_id: string | null;
+  responsible_name?: string;
+  status: 'OK' | 'ANDAMENTO';
+  actions: ActionPlanAction[];
+}
+
 export interface ActionPlan {
   id: string;
   tenant_id: string;
@@ -149,11 +169,12 @@ export interface ActionPlan {
   description?: string;
   due_date: string;
   responsible_id: string | null;
-  responsible_name?: string; // Cache local
+  responsible_name?: string;
   approver_id: string | null;
-  approver_name?: string; // Cache local
+  approver_name?: string;
   status: 'pendente' | 'em_andamento' | 'concluido' | 'atrasado' | 'cancelado';
   progress: number;
+  objectives?: ActionPlanObjective[];
 }
 
 export interface Meeting {
@@ -323,26 +344,121 @@ const MOCK_ACTION_PLANS: ActionPlan[] = [
   {
     id: 'ap-1',
     tenant_id: 't-senda',
-    department_id: 'd-vendas',
-    name: 'Revisar Script de Abordagem Comercial',
-    description: 'Melhorar o roteiro de ligação fria dos vendedores com novas copys.',
-    due_date: '2026-06-25',
-    responsible_id: 'u-fabricio',
+    department_id: 'd-admin',
+    name: 'Implantar o Método Senda',
+    description: 'Acompanhamento da implantação da consultoria de gestão estratégica.',
+    due_date: '2024-04-17',
+    responsible_id: 'u-paulo',
     approver_id: 'u-paulo',
     status: 'em_andamento',
-    progress: 45
+    progress: 95,
+    objectives: [
+      {
+        id: 'obj-1-1',
+        name: 'Implantar a etapa 1 - Diagnóstico',
+        due_date: '2023-05-29',
+        responsible_id: 'u-paulo',
+        status: 'ANDAMENTO',
+        actions: [
+          {
+            id: 'act-1-1-1',
+            name: 'Treinar e cadastrar os gestores no sistema Método Senda',
+            due_date: '2023-03-02',
+            responsible_id: 'u-paulo',
+            cost: 0,
+            status: 'OK'
+          },
+          {
+            id: 'act-1-1-2',
+            name: 'Definir as Macro Diretrizes',
+            due_date: '2023-03-02',
+            responsible_id: 'u-paulo',
+            cost: 0,
+            status: 'ANDAMENTO'
+          },
+          {
+            id: 'act-1-1-3',
+            name: 'Levantar dados para elaborar o orçamento financeiro',
+            due_date: '2023-03-11',
+            responsible_id: 'u-paulo',
+            cost: 0,
+            status: 'OK'
+          },
+          {
+            id: 'act-1-1-4',
+            name: 'Levantar dados para a definição dos indicadores de Controle',
+            due_date: '2023-03-25',
+            responsible_id: 'u-paulo',
+            cost: 0,
+            status: 'OK'
+          }
+        ]
+      },
+      {
+        id: 'obj-1-2',
+        name: 'Implantar a etapa 2 - Definição das Diretrizes',
+        due_date: '2023-07-28',
+        responsible_id: 'u-paulo',
+        status: 'OK',
+        actions: [
+          {
+            id: 'act-1-2-1',
+            name: 'Revisar metas com a diretoria',
+            due_date: '2023-07-20',
+            responsible_id: 'u-paulo',
+            cost: 0,
+            status: 'OK'
+          }
+        ]
+      },
+      {
+        id: 'obj-1-3',
+        name: 'Implantar a etapa 3 - Desdobramento das Diretrizes',
+        due_date: '2023-08-28',
+        responsible_id: 'u-paulo',
+        status: 'OK',
+        actions: [
+          {
+            id: 'act-1-3-1',
+            name: 'Criar painéis setoriais',
+            due_date: '2023-08-15',
+            responsible_id: 'u-paulo',
+            cost: 0,
+            status: 'OK'
+          }
+        ]
+      },
+      {
+        id: 'obj-1-4',
+        name: 'Implantar a etapa 4 - Implantação e Acompanhamento',
+        due_date: '2024-04-17',
+        responsible_id: 'u-paulo',
+        status: 'OK',
+        actions: [
+          {
+            id: 'act-1-4-1',
+            name: 'Acompanhar reuniões mensais',
+            due_date: '2024-04-10',
+            responsible_id: 'u-paulo',
+            cost: 0,
+            status: 'OK'
+          }
+        ]
+      }
+    ]
   },
   {
     id: 'ap-2',
     tenant_id: 't-senda',
-    department_id: 'd-ti',
-    name: 'Migração do Banco de Dados para Produção',
-    description: 'Mapear e migrar a estrutura de RLS e schemas finais para o Supabase principal.',
-    due_date: '2026-06-30',
-    responsible_id: 'u-ieda',
+    department_id: 'd-admin',
+    name: 'ESTRUTURAR A ÁREA DE GESTÃO DE PESSOAS (GP) FASE 2',
+    description: 'Mapeamento e estruturação de cargos, salários e cultura interna.',
+    due_date: '2023-11-30',
+    responsible_id: 'u-solano',
     approver_id: 'u-solano',
-    status: 'pendente',
-    progress: 10
+    status: 'atrasado',
+    progress: 0,
+    objectives: []
   },
   {
     id: 'ap-3',
@@ -354,7 +470,8 @@ const MOCK_ACTION_PLANS: ActionPlan[] = [
     responsible_id: 'u-gessica',
     approver_id: 'u-paulo',
     status: 'atrasado',
-    progress: 80
+    progress: 80,
+    objectives: []
   },
   {
     id: 'ap-4',
@@ -366,7 +483,8 @@ const MOCK_ACTION_PLANS: ActionPlan[] = [
     responsible_id: 'u-paulo',
     approver_id: 'u-paulo',
     status: 'concluido',
-    progress: 100
+    progress: 100,
+    objectives: []
   }
 ];
 
@@ -878,7 +996,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       responsible_id: plan.responsible_id || null,
       approver_id: plan.approver_id || null,
       status: plan.status || 'pendente',
-      progress: plan.progress || 0
+      progress: plan.progress || 0,
+      objectives: plan.objectives || []
     };
 
     try {
@@ -897,19 +1016,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateActionPlan = async (id: string, plan: Partial<ActionPlan>): Promise<boolean> => {
     try {
+      const updateData: any = {
+        name: plan.name,
+        description: plan.description,
+        due_date: plan.due_date,
+        responsible_id: plan.responsible_id,
+        approver_id: plan.approver_id,
+        department_id: plan.department_id,
+        status: plan.status,
+        progress: plan.progress
+      };
+      
+      if (plan.objectives !== undefined) {
+        updateData.objectives = plan.objectives;
+      }
+
       const { error } = await supabase
         .from('action_plans')
-        .update({
-          name: plan.name,
-          description: plan.description,
-          due_date: plan.due_date,
-          responsible_id: plan.responsible_id,
-          approver_id: plan.approver_id,
-          department_id: plan.department_id,
-          status: plan.status,
-          progress: plan.progress
-        })
+        .update(updateData)
         .eq('id', id);
+        
       if (error) throw error;
       await refreshData();
       return true;
