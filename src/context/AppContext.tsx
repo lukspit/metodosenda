@@ -188,15 +188,73 @@ export interface Meeting {
   participants: string[];
 }
 
+export interface MeetingMinuteForwarding {
+  id: string;
+  inserted_at: string;
+  description: string;
+  module_tag?: string;
+  priority_tag?: 'BAIXA' | 'MEDIA' | 'ALTA';
+  responsible_id: string | null;
+  responsible_name: string;
+  due_date: string;
+  status: 'PENDENTE' | 'ANDAMENTO' | 'CONCLUIDO';
+}
+
+export interface MeetingMinuteDefinition {
+  id: string;
+  inserted_at: string;
+  description: string;
+}
+
 export interface MeetingMinute {
   id: string;
   tenant_id: string;
   meeting_id: string | null;
   title: string;
-  content: string;
+  content: string; // JSON serializado v2 ou texto simples v1
   summary?: string;
   created_at: string;
+  description?: string;
+  print_description?: boolean;
+  forwardings?: MeetingMinuteForwarding[];
+  definitions?: MeetingMinuteDefinition[];
 }
+
+export const parseMeetingMinute = (dbMin: any): MeetingMinute => {
+  try {
+    const parsed = JSON.parse(dbMin.content);
+    if (parsed && parsed.version === '2') {
+      return {
+        ...dbMin,
+        content: parsed.raw_content || '',
+        description: parsed.description || '',
+        print_description: parsed.print_description ?? false,
+        forwardings: parsed.forwardings || [],
+        definitions: parsed.definitions || []
+      };
+    }
+  } catch (e) {
+    // Conteudo nao e JSON (ata v1 legada)
+  }
+  return {
+    ...dbMin,
+    description: '',
+    print_description: false,
+    forwardings: [],
+    definitions: []
+  };
+};
+
+export const serializeMeetingMinuteContent = (minute: Partial<MeetingMinute>): string => {
+  return JSON.stringify({
+    version: '2',
+    raw_content: minute.content || '',
+    description: minute.description || '',
+    print_description: minute.print_description ?? false,
+    forwardings: minute.forwardings || [],
+    definitions: minute.definitions || []
+  });
+};
 
 interface AppContextProps {
   loading: boolean;
@@ -222,6 +280,7 @@ interface AppContextProps {
   deleteActionPlan: (id: string) => Promise<boolean>;
   createMeeting: (meet: Partial<Meeting>) => Promise<boolean>;
   createMeetingMinute: (minute: Partial<MeetingMinute>) => Promise<boolean>;
+  updateMeetingMinute: (id: string, minute: Partial<MeetingMinute>) => Promise<boolean>;
   updateActionPlanStatus: (id: string, status: ActionPlan['status'], progress: number) => Promise<boolean>;
   updateTenantCulture: (culture: { mission?: string; vision?: string; values?: string; purpose?: string }) => Promise<boolean>;
   saveDashboardInsights: (insights: string) => Promise<boolean>;
@@ -637,9 +696,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .eq('tenant_id', currentTenant.id);
 
       if (!minError && minData && minData.length > 0) {
-        setMeetingMinutes(minData);
+        setMeetingMinutes(minData.map(parseMeetingMinute));
       } else {
-        setMeetingMinutes(MOCK_MINUTES.filter(min => min.tenant_id === currentTenant.id));
+        setMeetingMinutes(MOCK_MINUTES.filter(min => min.tenant_id === currentTenant.id).map(parseMeetingMinute));
       }
 
     } catch (err) {
@@ -656,7 +715,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         approver_name: MOCK_PROFILES.find(ap => ap.id === p.approver_id)?.name || 'Não atribuído'
       })));
       setMeetings(MOCK_MEETINGS.filter(m => m.tenant_id === currentTenant.id));
-      setMeetingMinutes(MOCK_MINUTES.filter(min => min.tenant_id === currentTenant.id));
+      setMeetingMinutes(MOCK_MINUTES.filter(min => min.tenant_id === currentTenant.id).map(parseMeetingMinute));
     } finally {
       setLoading(false);
     }
@@ -1093,11 +1152,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const createMeetingMinute = async (minute: Partial<MeetingMinute>): Promise<boolean> => {
     if (!currentTenant) return false;
+    
+    const serializedContent = serializeMeetingMinuteContent(minute);
+    
     const newMin = {
       tenant_id: currentTenant.id,
       meeting_id: minute.meeting_id || null,
       title: minute.title || 'Nova Ata',
-      content: minute.content || '',
+      content: serializedContent,
       summary: minute.summary || '',
       created_at: minute.created_at || new Date().toISOString()
     };
@@ -1109,7 +1171,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return true;
     } catch (err) {
       console.error('Erro ao criar ata no Supabase:', err);
-      setMeetingMinutes(prev => [...prev, { ...newMin, id: `min-${Math.random().toString(36).substr(2, 9)}` }]);
+      // Fallback local
+      const localMin: MeetingMinute = {
+        ...newMin,
+        id: `min-${Math.random().toString(36).substr(2, 9)}`,
+        content: minute.content || '',
+        description: minute.description || '',
+        print_description: minute.print_description ?? false,
+        forwardings: minute.forwardings || [],
+        definitions: minute.definitions || []
+      };
+      setMeetingMinutes(prev => [...prev, localMin]);
+      return true;
+    }
+  };
+
+  const updateMeetingMinute = async (id: string, minute: Partial<MeetingMinute>): Promise<boolean> => {
+    try {
+      const existing = meetingMinutes.find(m => m.id === id);
+      if (!existing) return false;
+
+      const merged = { ...existing, ...minute };
+      const serializedContent = serializeMeetingMinuteContent(merged);
+
+      const payload = {
+        title: merged.title,
+        content: serializedContent,
+        summary: merged.summary || '',
+        meeting_id: merged.meeting_id
+      };
+
+      const { error } = await supabase
+        .from('meeting_minutes')
+        .update(payload)
+        .eq('id', id);
+
+      if (error) throw error;
+      await refreshData();
+      return true;
+    } catch (err) {
+      console.error('Erro ao atualizar ata no Supabase:', err);
+      // Fallback local
+      setMeetingMinutes(prev => prev.map(m => m.id === id ? { ...m, ...minute } : m));
       return true;
     }
   };
@@ -1252,6 +1355,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteActionPlan,
       createMeeting,
       createMeetingMinute,
+      updateMeetingMinute,
       updateActionPlanStatus,
       updateTenantCulture,
       saveDashboardInsights,
