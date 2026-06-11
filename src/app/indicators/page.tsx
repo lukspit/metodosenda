@@ -3,6 +3,8 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useApp, Indicator, evaluateFormula, IndicatorVariable, IndicatorMeasurement } from '../../context/AppContext';
 import { SmartInput } from '../../components/SmartInput';
+import { SkeletonIndicators } from '../../components/SkeletonPage';
+import { User } from 'lucide-react';
 import { 
   BarChart3, 
   Sparkles, 
@@ -48,7 +50,9 @@ export default function IndicatorsPage() {
     departments, 
     createIndicator, 
     updateIndicator, 
-    deleteIndicator 
+    deleteIndicator,
+    profiles,
+    loading 
   } = useApp();
   
   const [filterDept, setFilterDept] = useState<string>('all');
@@ -79,6 +83,7 @@ export default function IndicatorsPage() {
   const [indVariables, setIndVariables] = useState<IndicatorVariable[]>([]);
   const [indFormula, setIndFormula] = useState('');
   const [indAccumulationType, setIndAccumulationType] = useState<'sum' | 'latest' | 'avg'>('latest');
+  const [indAllowedViewers, setIndAllowedViewers] = useState<string[]>([]);
 
   // Campos para Medições Mensais (Janeiro a Dezembro)
   const [monthlyValues, setMonthlyValues] = useState<Record<number, string>>({});
@@ -120,6 +125,10 @@ export default function IndicatorsPage() {
     { name: 'Subtração Simples: A - B', value: 'A - B', desc: 'Diferença entre variável A e B (ex: Lucro Líquido).' },
     { name: 'Multiplicação: A * B', value: 'A * B', desc: 'Multiplica variável A por B.' }
   ];
+
+  if (loading) {
+    return <SkeletonIndicators />;
+  }
 
   // Função robusta para limpar formatos de número (como 'R$ 300.000,00' ou '85%') e retornar float puro
   const cleanNumber = (val: any): number => {
@@ -207,6 +216,7 @@ export default function IndicatorsPage() {
     setIndAccumulationType('latest');
     setIndVariables([]);
     setIndFormula('');
+    setIndAllowedViewers([]);
     setIsModalOpen(true);
   };
 
@@ -225,6 +235,7 @@ export default function IndicatorsPage() {
     setIndAccumulationType(ind.accumulation_type || defaultAccum);
     setIndVariables(ind.variables || []);
     setIndFormula(ind.formula || '');
+    setIndAllowedViewers(ind.allowed_viewers || []);
     setIsModalOpen(true);
   };
 
@@ -318,7 +329,8 @@ export default function IndicatorsPage() {
       indicator_type: indIndicatorType,
       accumulation_type: indAccumulationType,
       variables: indIndicatorType === 'calculated' ? indVariables : [],
-      formula: indIndicatorType === 'calculated' ? indFormula : ''
+      formula: indIndicatorType === 'calculated' ? indFormula : '',
+      allowed_viewers: indAllowedViewers
     };
 
     if (selectedInd) {
@@ -1368,6 +1380,14 @@ export default function IndicatorsPage() {
                 </div>
               </div>
 
+              <div className="pt-2">
+                <AllowedViewersSelector 
+                  profiles={profiles}
+                  allowedViewers={indAllowedViewers}
+                  onChange={setIndAllowedViewers}
+                />
+              </div>
+
               {/* Botões de Ação */}
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
                 <button
@@ -1868,6 +1888,111 @@ export default function IndicatorsPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Componente de seleção reutilizável para visualizadores
+function AllowedViewersSelector({
+  profiles,
+  allowedViewers,
+  onChange
+}: {
+  profiles: any[];
+  allowedViewers: string[];
+  onChange: (viewers: string[]) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const isPublic = allowedViewers.length === 0;
+
+  const handleToggleUser = (userId: string) => {
+    if (allowedViewers.includes(userId)) {
+      onChange(allowedViewers.filter(id => id !== userId));
+    } else {
+      onChange([...allowedViewers, userId]);
+    }
+  };
+
+  const handleSetPublic = () => {
+    onChange([]);
+  };
+
+  return (
+    <div className="space-y-2 border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+      <div className="flex items-center justify-between">
+        <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider flex items-center gap-1 select-none">
+          <User className="w-3.5 h-3.5 text-[#C5A85A]" />
+          Quem pode visualizar este indicador?
+        </label>
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="text-[10px] text-[#C5A85A] hover:underline font-bold"
+        >
+          {isOpen ? 'Fechar Opções' : 'Configurar Restrição'}
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2 pt-0.5">
+        <button
+          type="button"
+          onClick={handleSetPublic}
+          className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all ${
+            isPublic
+              ? 'bg-[#C5A85A] border-[#C5A85A] text-white'
+              : 'bg-white border-slate-250 text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          Todos da Empresa (Público)
+        </button>
+        {!isPublic && (
+          <div className="flex -space-x-1 overflow-hidden py-0.5">
+            {allowedViewers.map(id => {
+              const prof = profiles.find(p => p.id === id);
+              if (!prof) return null;
+              const initials = prof.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
+              return (
+                <div 
+                  key={id} 
+                  title={prof.name}
+                  className="inline-block h-5.5 w-5.5 rounded-full ring-2 ring-white bg-[#C5A85A]/10 text-[#C5A85A] text-[8px] font-bold flex items-center justify-center border border-[#C5A85A]/35"
+                >
+                  {initials}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {isOpen && (
+        <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-2 max-h-[140px] overflow-y-auto pr-1">
+          <p className="text-[9px] text-slate-400 font-medium pb-0.5">Selecione quem terá permissão exclusiva:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {profiles.map((prof) => {
+              const checked = allowedViewers.includes(prof.id);
+              return (
+                <label 
+                  key={prof.id} 
+                  className={`flex items-center gap-2 px-2 py-1 border rounded cursor-pointer transition-all ${
+                    checked 
+                      ? 'bg-[#C5A85A]/5 border-[#C5A85A]/30 text-slate-800' 
+                      : 'bg-white border-slate-200 text-slate-550 hover:bg-slate-50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => handleToggleUser(prof.id)}
+                    className="rounded text-[#C5A85A] border-slate-350 focus:ring-[#C5A85A] w-3 h-3"
+                  />
+                  <span className="text-[10px] truncate font-medium">{prof.name}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
       )}

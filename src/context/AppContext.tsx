@@ -61,6 +61,7 @@ export interface Indicator {
   formula?: string;
   custom_unit?: string;
   measurements: IndicatorMeasurement[];
+  allowed_viewers?: string[];
 }
 
 export function evaluateFormula(formula: string, variables: Record<string, number>): number {
@@ -92,6 +93,7 @@ export const parseIndicator = (dbInd: any): Indicator => {
   let formula = '';
   let custom_unit = '';
   let accumulation_type: 'sum' | 'latest' | 'avg' = 'latest';
+  let allowed_viewers: string[] = [];
 
   const rawMeas = dbInd.measurements;
 
@@ -103,6 +105,7 @@ export const parseIndicator = (dbInd: any): Indicator => {
     variables = rawMeas.variables || [];
     formula = rawMeas.formula || '';
     custom_unit = rawMeas.custom_unit || '';
+    allowed_viewers = rawMeas.allowed_viewers || [];
     
     // Ler accumulation_type ou inferir a partir da unidade se ausente
     if (rawMeas.accumulation_type) {
@@ -175,7 +178,36 @@ export interface ActionPlan {
   status: 'pendente' | 'em_andamento' | 'concluido' | 'atrasado' | 'cancelado';
   progress: number;
   objectives?: ActionPlanObjective[];
+  allowed_viewers?: string[];
 }
+
+export const parseActionPlan = (dbPlan: any): ActionPlan => {
+  const desc = dbPlan.description || '';
+  const match = desc.match(/\n<!--allowed_viewers:(.*?)-->$/);
+  let allowed_viewers: string[] = [];
+  let cleanDescription = desc;
+
+  if (match) {
+    try {
+      allowed_viewers = JSON.parse(match[1]);
+      cleanDescription = desc.replace(/\n<!--allowed_viewers:(.*?)-->$/, '');
+    } catch (e) {}
+  }
+
+  return {
+    ...dbPlan,
+    description: cleanDescription,
+    allowed_viewers
+  };
+};
+
+export const serializeActionPlanDescription = (description: string, allowedViewers?: string[]): string => {
+  let desc = description || '';
+  if (allowedViewers && allowedViewers.length > 0) {
+    desc += `\n<!--allowed_viewers:${JSON.stringify(allowedViewers)}-->`;
+  }
+  return desc;
+};
 
 export interface Meeting {
   id: string;
@@ -218,6 +250,7 @@ export interface MeetingMinute {
   print_description?: boolean;
   forwardings?: MeetingMinuteForwarding[];
   definitions?: MeetingMinuteDefinition[];
+  allowed_viewers?: string[];
 }
 
 export const parseMeetingMinute = (dbMin: any): MeetingMinute => {
@@ -230,7 +263,8 @@ export const parseMeetingMinute = (dbMin: any): MeetingMinute => {
         description: parsed.description || '',
         print_description: parsed.print_description ?? false,
         forwardings: parsed.forwardings || [],
-        definitions: parsed.definitions || []
+        definitions: parsed.definitions || [],
+        allowed_viewers: parsed.allowed_viewers || []
       };
     }
   } catch (e) {
@@ -241,7 +275,8 @@ export const parseMeetingMinute = (dbMin: any): MeetingMinute => {
     description: '',
     print_description: false,
     forwardings: [],
-    definitions: []
+    definitions: [],
+    allowed_viewers: []
   };
 };
 
@@ -252,7 +287,8 @@ export const serializeMeetingMinuteContent = (minute: Partial<MeetingMinute>): s
     description: minute.description || '',
     print_description: minute.print_description ?? false,
     forwardings: minute.forwardings || [],
-    definitions: minute.definitions || []
+    definitions: minute.definitions || [],
+    allowed_viewers: minute.allowed_viewers || []
   });
 };
 
@@ -664,13 +700,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .eq('tenant_id', currentTenant.id);
 
       if (!planError && planData && planData.length > 0) {
-        setActionPlans(planData.map(p => ({
+        setActionPlans(planData.map(parseActionPlan).map(p => ({
           ...p,
           responsible_name: activeProfiles.find(ap => ap.id === p.responsible_id)?.name || 'Não atribuído',
           approver_name: activeProfiles.find(ap => ap.id === p.approver_id)?.name || 'Não atribuído'
         })));
       } else {
-        setActionPlans(MOCK_ACTION_PLANS.filter(ap => ap.tenant_id === currentTenant.id).map(p => ({
+        setActionPlans(MOCK_ACTION_PLANS.filter(ap => ap.tenant_id === currentTenant.id).map(parseActionPlan).map(p => ({
           ...p,
           responsible_name: MOCK_PROFILES.find(ap => ap.id === p.responsible_id)?.name || 'Não atribuído',
           approver_name: MOCK_PROFILES.find(ap => ap.id === p.approver_id)?.name || 'Não atribuído'
@@ -709,7 +745,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         manager_name: MOCK_PROFILES.find(p => p.id === d.manager_id)?.name || 'Sem responsável'
       })));
       setIndicators(MOCK_INDICATORS.filter(i => i.tenant_id === currentTenant.id).map(parseIndicator));
-      setActionPlans(MOCK_ACTION_PLANS.filter(ap => ap.tenant_id === currentTenant.id).map(p => ({
+      setActionPlans(MOCK_ACTION_PLANS.filter(ap => ap.tenant_id === currentTenant.id).map(parseActionPlan).map(p => ({
         ...p,
         responsible_name: MOCK_PROFILES.find(ap => ap.id === p.responsible_id)?.name || 'Não atribuído',
         approver_name: MOCK_PROFILES.find(ap => ap.id === p.approver_id)?.name || 'Não atribuído'
@@ -941,7 +977,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       accumulation_type: ind.accumulation_type || defaultAccumulation,
       variables: ind.variables || [],
       formula: ind.formula || '',
-      custom_unit: ind.custom_unit || ''
+      custom_unit: ind.custom_unit || '',
+      allowed_viewers: ind.allowed_viewers || []
     };
 
     const newIndPayload = {
@@ -1000,7 +1037,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         accumulation_type: merged.accumulation_type || defaultAccumulation,
         variables: merged.variables || [],
         formula: merged.formula || '',
-        custom_unit: merged.custom_unit || ''
+        custom_unit: merged.custom_unit || '',
+        allowed_viewers: merged.allowed_viewers || []
       };
 
       const payload = {
@@ -1046,11 +1084,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // CRUD Planos de Ação
   const createActionPlan = async (plan: Partial<ActionPlan>): Promise<boolean> => {
     if (!currentTenant) return false;
+    
+    const serializedDescription = serializeActionPlanDescription(plan.description || '', plan.allowed_viewers);
+
     const newPlan = {
       tenant_id: currentTenant.id,
       department_id: plan.department_id || null,
       name: plan.name || 'Novo Plano de Ação',
-      description: plan.description || '',
+      description: serializedDescription,
       due_date: plan.due_date || new Date().toISOString().split('T')[0],
       responsible_id: plan.responsible_id || null,
       approver_id: plan.approver_id || null,
@@ -1068,16 +1109,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.error('Erro ao criar plano de ação no Supabase:', err);
       const respName = profiles.find(p => p.id === newPlan.responsible_id)?.name || 'Não atribuído';
       const appName = profiles.find(p => p.id === newPlan.approver_id)?.name || 'Não atribuído';
-      setActionPlans(prev => [...prev, { ...newPlan, id: `ap-${Math.random().toString(36).substr(2, 9)}`, responsible_name: respName, approver_name: appName }]);
+      
+      const localPlan: ActionPlan = {
+        ...newPlan,
+        id: `ap-${Math.random().toString(36).substr(2, 9)}`,
+        description: plan.description || '',
+        allowed_viewers: plan.allowed_viewers || [],
+        responsible_name: respName,
+        approver_name: appName
+      };
+      
+      setActionPlans(prev => [...prev, localPlan]);
       return true;
     }
   };
 
   const updateActionPlan = async (id: string, plan: Partial<ActionPlan>): Promise<boolean> => {
     try {
+      const existing = actionPlans.find(p => p.id === id);
+      const allowedViewers = plan.allowed_viewers !== undefined ? plan.allowed_viewers : (existing?.allowed_viewers || []);
+      const description = plan.description !== undefined ? plan.description : (existing?.description || '');
+      
+      const serializedDescription = serializeActionPlanDescription(description, allowedViewers);
+
       const updateData: any = {
         name: plan.name,
-        description: plan.description,
+        description: serializedDescription,
         due_date: plan.due_date,
         responsible_id: plan.responsible_id,
         approver_id: plan.approver_id,
@@ -1330,6 +1387,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Lógica de visibilidade centralizada por perfil
+  const isResourceVisible = (resource: any, profile: Profile | null): boolean => {
+    if (!profile) return true; // Se o perfil ainda não estiver carregado, exibe por padrão
+    const role = profile.role;
+    if (role === 'admin' || role === 'consultor') return true; // Admins e consultores da Senda vêem tudo
+
+    const allowed = resource.allowed_viewers;
+    if (!allowed || allowed.length === 0) return true; // Público
+
+    // Se estiver explicitamente autorizado
+    if (allowed.includes(profile.id)) return true;
+
+    // Se for o responsável ou aprovador (específico de Planos de Ação)
+    if (resource.responsible_id === profile.id || resource.approver_id === profile.id) return true;
+
+    return false;
+  };
+
+  const filteredMeetingMinutes = meetingMinutes.filter(m => isResourceVisible(m, currentProfile));
+  const filteredActionPlans = actionPlans.filter(ap => isResourceVisible(ap, currentProfile));
+  const filteredIndicators = indicators.filter(i => isResourceVisible(i, currentProfile));
+
   return (
     <AppContext.Provider value={{
       loading,
@@ -1339,10 +1418,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       profiles,
       currentProfile,
       departments,
-      indicators,
-      actionPlans,
+      indicators: filteredIndicators,
+      actionPlans: filteredActionPlans,
       meetings,
-      meetingMinutes,
+      meetingMinutes: filteredMeetingMinutes,
       refreshData,
       createDepartment,
       updateDepartment,

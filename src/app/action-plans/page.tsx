@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useApp, ActionPlan, ActionPlanObjective, ActionPlanAction } from '../../context/AppContext';
 import { SmartInput } from '../../components/SmartInput';
+import { SkeletonActionPlans } from '../../components/SkeletonPage';
 import { 
   Target, 
   Sparkles, 
@@ -33,7 +34,8 @@ export default function ActionPlansPage() {
     createActionPlan, 
     updateActionPlan, 
     deleteActionPlan,
-    updateActionPlanStatus 
+    updateActionPlanStatus,
+    loading
   } = useApp();
 
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -74,6 +76,7 @@ export default function ActionPlansPage() {
   const [planDeptId, setPlanDeptId] = useState('');
   const [planStatus, setPlanStatus] = useState<ActionPlan['status']>('pendente');
   const [planProgress, setPlanProgress] = useState(0);
+  const [planAllowedViewers, setPlanAllowedViewers] = useState<string[]>([]);
 
   // Modal de Objetivo
   const [isObjectiveModalOpen, setIsObjectiveModalOpen] = useState(false);
@@ -113,6 +116,10 @@ export default function ActionPlansPage() {
     }
     return false;
   };
+
+  if (loading) {
+    return <SkeletonActionPlans />;
+  }
 
   // Funções de Cálculo Auxiliares
   const calculateObjectiveProgress = (objective: ActionPlanObjective): number => {
@@ -216,6 +223,7 @@ export default function ActionPlansPage() {
     setPlanDeptId('');
     setPlanStatus('pendente');
     setPlanProgress(0);
+    setPlanAllowedViewers([]);
     setIsModalOpen(true);
   };
 
@@ -229,6 +237,7 @@ export default function ActionPlansPage() {
     setPlanDeptId(plan.department_id || '');
     setPlanStatus(plan.status);
     setPlanProgress(plan.progress);
+    setPlanAllowedViewers(plan.allowed_viewers || []);
     setIsModalOpen(true);
   };
 
@@ -272,7 +281,8 @@ export default function ActionPlansPage() {
       department_id: planDeptId || null,
       status: isEditing ? planStatus : ('pendente' as const),
       progress: isEditing ? planProgress : 0,
-      objectives: objectivesList
+      objectives: objectivesList,
+      allowed_viewers: planAllowedViewers
     };
 
     if (isEditing && planId) {
@@ -1263,6 +1273,14 @@ export default function ActionPlansPage() {
                 </div>
               )}
 
+              <div className="pt-2">
+                <AllowedViewersSelector 
+                  profiles={profiles}
+                  allowedViewers={planAllowedViewers}
+                  onChange={setPlanAllowedViewers}
+                />
+              </div>
+
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
                 <button
                   type="button"
@@ -1495,6 +1513,111 @@ export default function ActionPlansPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Componente de seleção reutilizável para visualizadores
+function AllowedViewersSelector({
+  profiles,
+  allowedViewers,
+  onChange
+}: {
+  profiles: any[];
+  allowedViewers: string[];
+  onChange: (viewers: string[]) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const isPublic = allowedViewers.length === 0;
+
+  const handleToggleUser = (userId: string) => {
+    if (allowedViewers.includes(userId)) {
+      onChange(allowedViewers.filter(id => id !== userId));
+    } else {
+      onChange([...allowedViewers, userId]);
+    }
+  };
+
+  const handleSetPublic = () => {
+    onChange([]);
+  };
+
+  return (
+    <div className="space-y-2 border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+      <div className="flex items-center justify-between">
+        <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider flex items-center gap-1 select-none">
+          <User className="w-3.5 h-3.5 text-[#C5A85A]" />
+          Quem pode visualizar este plano?
+        </label>
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="text-[10px] text-[#C5A85A] hover:underline font-bold"
+        >
+          {isOpen ? 'Fechar Opções' : 'Configurar Restrição'}
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2 pt-0.5">
+        <button
+          type="button"
+          onClick={handleSetPublic}
+          className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all ${
+            isPublic
+              ? 'bg-[#C5A85A] border-[#C5A85A] text-white'
+              : 'bg-white border-slate-250 text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          Todos da Empresa (Público)
+        </button>
+        {!isPublic && (
+          <div className="flex -space-x-1 overflow-hidden py-0.5">
+            {allowedViewers.map(id => {
+              const prof = profiles.find(p => p.id === id);
+              if (!prof) return null;
+              const initials = prof.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
+              return (
+                <div 
+                  key={id} 
+                  title={prof.name}
+                  className="inline-block h-5.5 w-5.5 rounded-full ring-2 ring-white bg-[#C5A85A]/10 text-[#C5A85A] text-[8px] font-bold flex items-center justify-center border border-[#C5A85A]/35"
+                >
+                  {initials}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {isOpen && (
+        <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-2 max-h-[140px] overflow-y-auto pr-1">
+          <p className="text-[9px] text-slate-400 font-medium pb-0.5">Selecione quem terá permissão exclusiva:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {profiles.map((prof) => {
+              const checked = allowedViewers.includes(prof.id);
+              return (
+                <label 
+                  key={prof.id} 
+                  className={`flex items-center gap-2 px-2 py-1 border rounded cursor-pointer transition-all ${
+                    checked 
+                      ? 'bg-[#C5A85A]/5 border-[#C5A85A]/30 text-slate-800' 
+                      : 'bg-white border-slate-200 text-slate-550 hover:bg-slate-50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => handleToggleUser(prof.id)}
+                    className="rounded text-[#C5A85A] border-slate-350 focus:ring-[#C5A85A] w-3 h-3"
+                  />
+                  <span className="text-[10px] truncate font-medium">{prof.name}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
       )}

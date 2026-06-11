@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp, MeetingMinute, MeetingMinuteForwarding, MeetingMinuteDefinition } from '../../context/AppContext';
+import { SkeletonMinutes } from '../../components/SkeletonPage';
 import { 
   FileText, 
   Sparkles, 
@@ -37,7 +38,8 @@ export default function MinutesPage() {
     profiles, 
     departments, 
     createMeetingMinute, 
-    updateMeetingMinute 
+    updateMeetingMinute,
+    loading
   } = useApp();
 
   // Ata selecionada (se null, exibe listagem geral)
@@ -66,6 +68,7 @@ export default function MinutesPage() {
   const [newMinuteTitle, setNewMinuteTitle] = useState('');
   const [newMinuteDate, setNewMinuteDate] = useState(new Date().toISOString().split('T')[0]);
   const [newMinuteDescription, setNewMinuteDescription] = useState('');
+  const [newMinuteAllowedViewers, setNewMinuteAllowedViewers] = useState<string[]>([]);
 
   // Estados do Modal de Encaminhamento (Adição / Edição)
   const [isFwdModalOpen, setIsFwdModalOpen] = useState(false);
@@ -88,6 +91,7 @@ export default function MinutesPage() {
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editPrintDescription, setEditPrintDescription] = useState(false);
+  const [editAllowedViewers, setEditAllowedViewers] = useState<string[]>([]);
 
   // Estados do Painel Senda AI Lateral
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
@@ -156,6 +160,7 @@ export default function MinutesPage() {
       setEditTitle(selectedMinute.title);
       setEditDescription(selectedMinute.description || '');
       setEditPrintDescription(selectedMinute.print_description || false);
+      setEditAllowedViewers(selectedMinute.allowed_viewers || []);
       setPlansImported(false);
     }
   }, [selectedMinute]);
@@ -178,6 +183,10 @@ export default function MinutesPage() {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  if (loading) {
+    return <SkeletonMinutes />;
+  }
 
   // Gravação de voz
   const startRecording = async () => {
@@ -433,7 +442,8 @@ export default function MinutesPage() {
       description: newMinuteDescription,
       print_description: false,
       forwardings: [],
-      definitions: []
+      definitions: [],
+      allowed_viewers: newMinuteAllowedViewers
     });
 
     if (success) {
@@ -466,7 +476,8 @@ export default function MinutesPage() {
       ...selectedMinute,
       title: editTitle,
       description: editDescription,
-      print_description: editPrintDescription
+      print_description: editPrintDescription,
+      allowed_viewers: editAllowedViewers
     };
 
     const success = await updateMeetingMinute(selectedMinute.id, updated);
@@ -1322,6 +1333,14 @@ export default function MinutesPage() {
                         </label>
                       </div>
 
+                      <div className="border-t border-slate-100 pt-4">
+                        <AllowedViewersSelector 
+                          profiles={profiles}
+                          allowedViewers={editAllowedViewers}
+                          onChange={setEditAllowedViewers}
+                        />
+                      </div>
+
                       <div className="flex justify-end pt-4 border-t border-slate-100">
                         <button
                           type="submit"
@@ -1635,6 +1654,14 @@ export default function MinutesPage() {
                 />
               </div>
 
+              <div>
+                <AllowedViewersSelector 
+                  profiles={profiles}
+                  allowedViewers={newMinuteAllowedViewers}
+                  onChange={setNewMinuteAllowedViewers}
+                />
+              </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -1898,6 +1925,111 @@ export default function MinutesPage() {
         </div>
       )}
 
+    </div>
+  );
+}
+
+// Componente de seleção reutilizável para visualizadores
+function AllowedViewersSelector({
+  profiles,
+  allowedViewers,
+  onChange
+}: {
+  profiles: any[];
+  allowedViewers: string[];
+  onChange: (viewers: string[]) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const isPublic = allowedViewers.length === 0;
+
+  const handleToggleUser = (userId: string) => {
+    if (allowedViewers.includes(userId)) {
+      onChange(allowedViewers.filter(id => id !== userId));
+    } else {
+      onChange([...allowedViewers, userId]);
+    }
+  };
+
+  const handleSetPublic = () => {
+    onChange([]);
+  };
+
+  return (
+    <div className="space-y-2 border border-slate-200 rounded-lg p-3.5 bg-slate-50/50">
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 select-none">
+          <User className="w-4 h-4 text-[#C5A85A]" />
+          Quem pode visualizar este item?
+        </label>
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="text-xs text-[#C5A85A] hover:underline font-bold"
+        >
+          {isOpen ? 'Fechar Opções' : 'Configurar Restrição'}
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        <button
+          type="button"
+          onClick={handleSetPublic}
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+            isPublic
+              ? 'bg-[#C5A85A] border-[#C5A85A] text-white'
+              : 'bg-white border-slate-250 text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          Todos da Empresa (Público)
+        </button>
+        {!isPublic && (
+          <div className="flex -space-x-1.5 overflow-hidden py-0.5">
+            {allowedViewers.map(id => {
+              const prof = profiles.find(p => p.id === id);
+              if (!prof) return null;
+              const initials = prof.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
+              return (
+                <div 
+                  key={id} 
+                  title={prof.name}
+                  className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-[#C5A85A]/10 text-[#C5A85A] text-[9px] font-bold flex items-center justify-center border border-[#C5A85A]/35"
+                >
+                  {initials}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {isOpen && (
+        <div className="mt-3 pt-3 border-t border-slate-200 space-y-2 max-h-[160px] overflow-y-auto pr-1">
+          <p className="text-[10px] text-slate-400 font-medium pb-1">Selecione quem terá permissão exclusiva:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {profiles.map((prof) => {
+              const checked = allowedViewers.includes(prof.id);
+              return (
+                <label 
+                  key={prof.id} 
+                  className={`flex items-center gap-2 px-2.5 py-1.5 border rounded-md cursor-pointer transition-all ${
+                    checked 
+                      ? 'bg-[#C5A85A]/5 border-[#C5A85A]/40 text-slate-800' 
+                      : 'bg-white border-slate-200 text-slate-550 hover:bg-slate-50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => handleToggleUser(prof.id)}
+                    className="rounded text-[#C5A85A] border-slate-350 focus:ring-[#C5A85A] w-3.5 h-3.5"
+                  />
+                  <span className="text-xs truncate font-medium">{prof.name}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
