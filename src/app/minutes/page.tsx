@@ -39,7 +39,8 @@ export default function MinutesPage() {
     departments, 
     createMeetingMinute, 
     updateMeetingMinute,
-    loading
+    loading,
+    canManageMeetingMinute
   } = useApp();
 
   // Ata selecionada (se null, exibe listagem geral)
@@ -834,12 +835,14 @@ export default function MinutesPage() {
                 </h1>
                 <p className="text-sm text-slate-500 mt-1">Gerencie atas oficiais, registre deliberações, organize encaminhamentos e aproveite o suporte de IA.</p>
               </div>
-              <button
-                onClick={() => setIsNewMinuteModalOpen(true)}
-                className="bg-[#C5A85A] hover:bg-[#B3964C] text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 text-sm"
-              >
-                <Plus className="w-4 h-4" /> Adicionar Ata
-              </button>
+              {canManageMeetingMinute({}) && (
+                <button
+                  onClick={() => setIsNewMinuteModalOpen(true)}
+                  className="bg-[#C5A85A] hover:bg-[#B3964C] text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 text-sm"
+                >
+                  <Plus className="w-4 h-4" /> Adicionar Ata
+                </button>
+              )}
             </div>
 
             {/* Tabela de Atas (Print 1) */}
@@ -1019,18 +1022,20 @@ export default function MinutesPage() {
                           Total <strong className="text-slate-700">{filteredForwardings.length}</strong> itens.
                         </span>
                       </div>
-                      <button
-                        onClick={() => {
-                          resetFwdForm();
-                          setEditingFwd(null);
-                          setIsFwdModalOpen(true);
-                        }}
-                        className="bg-[#C5A85A] hover:bg-[#B3964C] text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-all active:scale-95 text-xs"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Adicionar Encaminhamento
-                      </button>
+                      {canManageMeetingMinute(selectedMinute) && (
+                        <button
+                          onClick={() => {
+                            resetFwdForm();
+                            setEditingFwd(null);
+                            setIsFwdModalOpen(true);
+                          }}
+                          className="bg-[#C5A85A] hover:bg-[#B3964C] text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-all active:scale-95 text-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Adicionar Encaminhamento
+                        </button>
+                      )}
                     </div>
-
+ 
                     {/* Tabela de Encaminhamentos (Print 2) */}
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-sm border-collapse">
@@ -1042,7 +1047,7 @@ export default function MinutesPage() {
                             <th className="py-2.5 px-3 w-40">Responsável</th>
                             <th className="py-2.5 px-3 w-32">Prazo</th>
                             <th className="py-2.5 px-3 w-28">Status</th>
-                            <th className="py-2.5 px-3 text-center w-24">Ações</th>
+                            {canManageMeetingMinute(selectedMinute) && <th className="py-2.5 px-3 text-center w-24">Ações</th>}
                           </tr>
                           {/* Filtros Inline */}
                           <tr className="bg-[#EAEAEA] border-b border-slate-200">
@@ -1094,7 +1099,7 @@ export default function MinutesPage() {
                                 <option value="CONCLUIDO">Concluído</option>
                               </select>
                             </th>
-                            <th className="py-1.5 px-2"></th>
+                            {canManageMeetingMinute(selectedMinute) && <th className="py-1.5 px-2"></th>}
                           </tr>
                         </thead>
                         <tbody>
@@ -1103,7 +1108,7 @@ export default function MinutesPage() {
                               const overdue = isOverdue(fwd.due_date, fwd.status);
                               
                               return (
-                                <tr key={fwd.id} className="border-b border-slate-200 hover:bg-slate-50/50 transition-colors">
+                                <tr key={fwd.id} className="border-b border-slate-200 hover:bg-slate-55/60 transition-colors">
                                   {/* Inserido */}
                                   <td className="py-3 px-3 text-xs text-slate-500 font-mono">
                                     {formatDateString(fwd.inserted_at)}
@@ -1136,9 +1141,14 @@ export default function MinutesPage() {
                                   <td className="py-3 px-3 text-center">
                                     <button
                                       type="button"
-                                      onClick={() => handleToggleFwdStatus(fwd)}
-                                      className="p-1 rounded-md transition-all hover:scale-105 active:scale-95"
-                                      title={`Status atual: ${fwd.status}. Clique para alterar.`}
+                                      onClick={() => {
+                                        if (canManageMeetingMinute(selectedMinute)) {
+                                          handleToggleFwdStatus(fwd);
+                                        }
+                                      }}
+                                      className={`p-1 rounded-md transition-all ${canManageMeetingMinute(selectedMinute) ? 'hover:scale-105 active:scale-95' : 'cursor-default opacity-80'}`}
+                                      title={canManageMeetingMinute(selectedMinute) ? `Status atual: ${fwd.status}. Clique para alterar.` : `Status atual: ${fwd.status}`}
+                                      disabled={!canManageMeetingMinute(selectedMinute)}
                                     >
                                       {fwd.status === 'CONCLUIDO' ? (
                                         <div className="w-7 h-7 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full flex items-center justify-center font-bold text-[10px]" title="Concluído">
@@ -1157,24 +1167,26 @@ export default function MinutesPage() {
                                   </td>
                                   
                                   {/* Ações */}
-                                  <td className="py-3 px-3 text-center">
-                                    <div className="flex justify-center gap-1">
-                                      <button
-                                        onClick={() => handleOpenEditFwd(fwd)}
-                                        className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
-                                        title="Editar"
-                                      >
-                                        <Edit className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteFwd(fwd.id)}
-                                        className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
-                                        title="Excluir"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  </td>
+                                  {canManageMeetingMinute(selectedMinute) && (
+                                    <td className="py-3 px-3 text-center">
+                                      <div className="flex justify-center gap-1">
+                                        <button
+                                          onClick={() => handleOpenEditFwd(fwd)}
+                                          className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
+                                          title="Editar"
+                                        >
+                                          <Edit className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteFwd(fwd.id)}
+                                          className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                                          title="Excluir"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  )}
                                 </tr>
                               );
                             })
@@ -1201,19 +1213,21 @@ export default function MinutesPage() {
                           Total <strong className="text-slate-700">{filteredDefinitions.length}</strong> itens.
                         </span>
                       </div>
-                      <button
-                        onClick={() => {
-                          setEditingDef(null);
-                          setDefDescription('');
-                          setDefInsertedAt(new Date().toISOString().split('T')[0]);
-                          setIsDefModalOpen(true);
-                        }}
-                        className="bg-[#C5A85A] hover:bg-[#B3964C] text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-all active:scale-95 text-xs"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Adicionar Definição
-                      </button>
+                      {canManageMeetingMinute(selectedMinute) && (
+                        <button
+                          onClick={() => {
+                            setEditingDef(null);
+                            setDefDescription('');
+                            setDefInsertedAt(new Date().toISOString().split('T')[0]);
+                            setIsDefModalOpen(true);
+                          }}
+                          className="bg-[#C5A85A] hover:bg-[#B3964C] text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-all active:scale-95 text-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Adicionar Definição
+                        </button>
+                      )}
                     </div>
-
+ 
                     {/* Tabela de Definições (Print 3) */}
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-sm border-collapse">
@@ -1222,7 +1236,7 @@ export default function MinutesPage() {
                           <tr className="bg-[#C5A85A] text-white font-semibold text-xs border-b border-slate-350">
                             <th className="py-2.5 px-4 w-32">Inserido</th>
                             <th className="py-2.5 px-4">Definição</th>
-                            <th className="py-2.5 px-4 text-center w-24">Ações</th>
+                            {canManageMeetingMinute(selectedMinute) && <th className="py-2.5 px-4 text-center w-24">Ações</th>}
                           </tr>
                           {/* Filtros Inline */}
                           <tr className="bg-[#EAEAEA] border-b border-slate-200">
@@ -1244,37 +1258,39 @@ export default function MinutesPage() {
                                 className="w-full bg-white text-[11px] text-slate-700 border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#C5A85A]"
                               />
                             </th>
-                            <th className="py-1.5 px-3"></th>
+                            {canManageMeetingMinute(selectedMinute) && <th className="py-1.5 px-3"></th>}
                           </tr>
                         </thead>
                         <tbody>
                           {filteredDefinitions.length > 0 ? (
                             filteredDefinitions.map((def) => (
-                              <tr key={def.id} className="border-b border-slate-200 hover:bg-slate-50/50 transition-colors">
+                              <tr key={def.id} className="border-b border-slate-200 hover:bg-slate-55/60 transition-colors">
                                 <td className="py-3 px-4 text-xs text-slate-500 font-mono">
                                   {formatDateString(def.inserted_at)}
                                 </td>
                                 <td className="py-3 px-4 text-xs text-slate-800 whitespace-pre-wrap leading-relaxed">
                                   {def.description}
                                 </td>
-                                <td className="py-3 px-4 text-center">
-                                  <div className="flex justify-center gap-1">
-                                    <button
-                                      onClick={() => handleOpenEditDef(def)}
-                                      className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
-                                      title="Editar"
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteDef(def.id)}
-                                      className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
-                                      title="Excluir"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </td>
+                                {canManageMeetingMinute(selectedMinute) && (
+                                  <td className="py-3 px-4 text-center">
+                                    <div className="flex justify-center gap-1">
+                                      <button
+                                        onClick={() => handleOpenEditDef(def)}
+                                        className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
+                                        title="Editar"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteDef(def.id)}
+                                        className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                                        title="Excluir"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                )}
                               </tr>
                             ))
                           ) : (
@@ -1304,6 +1320,7 @@ export default function MinutesPage() {
                           onChange={(e) => setEditTitle(e.target.value)}
                           className="w-full bg-slate-50 text-sm text-slate-850 border border-slate-250 px-4 py-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A]"
                           required
+                          disabled={!canManageMeetingMinute(selectedMinute)}
                         />
                       </div>
 
@@ -1317,6 +1334,7 @@ export default function MinutesPage() {
                           onChange={(e) => setEditDescription(e.target.value)}
                           placeholder="Digite considerações gerais, participantes presentes ou pauta discutida de forma ampla."
                           className="w-full bg-slate-50 text-sm text-slate-850 border border-slate-250 px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A85A] resize-none"
+                          disabled={!canManageMeetingMinute(selectedMinute)}
                         />
                       </div>
 
@@ -1327,6 +1345,7 @@ export default function MinutesPage() {
                           checked={editPrintDescription}
                           onChange={(e) => setEditPrintDescription(e.target.checked)}
                           className="w-4 h-4 rounded text-[#C5A85A] border-slate-300 focus:ring-[#C5A85A]"
+                          disabled={!canManageMeetingMinute(selectedMinute)}
                         />
                         <label htmlFor="print_description" className="text-sm text-slate-700 font-medium select-none cursor-pointer">
                           Imprimir descrição
@@ -1338,17 +1357,20 @@ export default function MinutesPage() {
                           profiles={profiles}
                           allowedViewers={editAllowedViewers}
                           onChange={setEditAllowedViewers}
+                          disabled={!canManageMeetingMinute(selectedMinute)}
                         />
                       </div>
 
-                      <div className="flex justify-end pt-4 border-t border-slate-100">
-                        <button
-                          type="submit"
-                          className="bg-[#C5A85A] hover:bg-[#B3964C] text-white font-semibold px-5 py-2.5 rounded-lg flex items-center gap-2 shadow-md transition-all active:scale-95 text-sm"
-                        >
-                          <Send className="w-4 h-4" /> Salvar Ata
-                        </button>
-                      </div>
+                      {canManageMeetingMinute(selectedMinute) && (
+                        <div className="flex justify-end pt-4 border-t border-slate-100">
+                          <button
+                            type="submit"
+                            className="bg-[#C5A85A] hover:bg-[#B3964C] text-white font-semibold px-5 py-2.5 rounded-lg flex items-center gap-2 shadow-md transition-all active:scale-95 text-sm"
+                          >
+                            <Send className="w-4 h-4" /> Salvar Ata
+                          </button>
+                        </div>
+                      )}
                     </form>
                   </div>
                 )}
@@ -1933,16 +1955,19 @@ export default function MinutesPage() {
 function AllowedViewersSelector({
   profiles,
   allowedViewers,
-  onChange
+  onChange,
+  disabled
 }: {
   profiles: any[];
   allowedViewers: string[];
   onChange: (viewers: string[]) => void;
+  disabled?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const isPublic = allowedViewers.length === 0;
 
   const handleToggleUser = (userId: string) => {
+    if (disabled) return;
     if (allowedViewers.includes(userId)) {
       onChange(allowedViewers.filter(id => id !== userId));
     } else {
@@ -1951,6 +1976,7 @@ function AllowedViewersSelector({
   };
 
   const handleSetPublic = () => {
+    if (disabled) return;
     onChange([]);
   };
 
@@ -1961,24 +1987,27 @@ function AllowedViewersSelector({
           <User className="w-4 h-4 text-[#C5A85A]" />
           Quem pode visualizar este item?
         </label>
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="text-xs text-[#C5A85A] hover:underline font-bold"
-        >
-          {isOpen ? 'Fechar Opções' : 'Configurar Restrição'}
-        </button>
+        {!disabled && (
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-xs text-[#C5A85A] hover:underline font-bold"
+          >
+            {isOpen ? 'Fechar Opções' : 'Configurar Restrição'}
+          </button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2 pt-1">
         <button
           type="button"
           onClick={handleSetPublic}
+          disabled={disabled}
           className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
             isPublic
               ? 'bg-[#C5A85A] border-[#C5A85A] text-white'
               : 'bg-white border-slate-250 text-slate-600 hover:bg-slate-50'
-          }`}
+          } ${disabled ? 'opacity-85 cursor-default' : ''}`}
         >
           Todos da Empresa (Público)
         </button>

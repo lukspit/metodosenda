@@ -324,6 +324,9 @@ interface AppContextProps {
   associateConsultant: (userId: string, tenantId: string) => Promise<boolean>;
   dissociateConsultant: (userId: string, tenantId: string) => Promise<boolean>;
   fetchAssociatedConsultants: (tenantId: string) => Promise<string[]>;
+  canManageIndicator: (indicator: Partial<Indicator>) => boolean;
+  canManageActionPlan: (plan: Partial<ActionPlan>) => boolean;
+  canManageMeetingMinute: (minute: Partial<MeetingMinute>) => boolean;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
@@ -1387,27 +1390,161 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Lógica de visibilidade centralizada por perfil
-  const isResourceVisible = (resource: any, profile: Profile | null): boolean => {
+  // Obter IDs dos sub-departamentos recursivamente
+  const getSubDepartmentIds = (deptId: string): string[] => {
+    const subIds: string[] = [];
+    const traverse = (parentId: string) => {
+      const children = departments.filter(d => d.parent_id === parentId);
+      for (const child of children) {
+        subIds.push(child.id);
+        traverse(child.id);
+      }
+    };
+    traverse(deptId);
+    return subIds;
+  };
+
+  // Mapear os departamentos que o usuário atual gerencia diretamente ou indiretamente
+  const getManagedDepartmentIds = (): string[] => {
+    if (!currentProfile) return [];
+    const managedDepts = departments.filter(d => d.manager_id === currentProfile.id);
+    return managedDepts.flatMap(d => [d.id, ...getSubDepartmentIds(d.id)]);
+  };
+
+  const managedDeptIds = getManagedDepartmentIds();
+
+  // Lógica de visibilidade centralizada por perfil e setor
+  const isResourceVisible = (resource: any, profile: Profile | null, type: 'indicator' | 'action_plan' | 'minute'): boolean => {
     if (!profile) return true; // Se o perfil ainda não estiver carregado, exibe por padrão
     const role = profile.role;
     if (role === 'admin' || role === 'consultor') return true; // Admins e consultores da Senda vêem tudo
 
+    // 1. Gestor de setor: vê tudo do seu setor e de sub-setores recursivos
+    const resourceDeptId = resource.department_id;
+    if (resourceDeptId && managedDeptIds.includes(resourceDeptId)) {
+      return true;
+    }
+
+    // 2. Verificar restrições de allowed_viewers (privacidade granular da Fase 2)
     const allowed = resource.allowed_viewers;
-    if (!allowed || allowed.length === 0) return true; // Público
+    const hasAllowedViewers = allowed && Array.isArray(allowed) && allowed.length > 0;
+    
+    if (hasAllowedViewers) {
+      const isExplicitlyAllowed = allowed.includes(profile.id);
+      
+      if (type === 'action_plan') {
+        const isResponsibleOrApprover = resource.responsible_id === profile.id || resource.approver_id === profile.id;
+        let isResponsibleForSubItem = false;
+        if (resource.objectives) {
+          isResponsibleForSubItem = resource.objectives.some((obj: any) => {
+            if (obj.responsible_id === profile.id) return true;
+            if (obj.actions) {
+              return obj.actions.some((act: any) => act.responsible_id === profile.id);
+            }
+            return false;
+          });
+        }
+        return isExplicitlyAllowed || isResponsibleOrApprover || isResponsibleForSubItem;
+      } else if (type === 'minute') {
+        let isMeetingParticipant = false;
+        if (resource.meeting_id) {
+          const meeting = meetings.find(m => m.id === resource.meeting_id);
+          if (meeting && meeting.participants && meeting.participants.includes(profile.id)) {
+            isMeetingParticipant = true;
+          }
+        }
+        return isExplicitlyAllowed || isMeetingParticipant;
+      } else {
+        return isExplicitlyAllowed;
+      }
+    }
 
-    // Se estiver explicitamente autorizado
-    if (allowed.includes(profile.id)) return true;
+    // 3. Sem restrição de privacidade explícita (público)
+    if (type === 'indicator') {
+      // Colaborador comum só vê indicadores do seu próprio departamento
+      return resourceDeptId === profile.department_id;
+    }
 
-    // Se for o responsável ou aprovador (específico de Planos de Ação)
-    if (resource.responsible_id === profile.id || resource.approver_id === profile.id) return true;
+    if (type === 'action_plan') {
+      // Colaborador comum só vê se for responsável pelo plano, por algum objetivo ou por alguma ação
+      const isResponsibleOrApprover = resource.responsible_id === profile.id || resource.approver_id === profile.id;
+      let isResponsibleForSubItem = false;
+      if (resource.objectives) {
+        isResponsibleForSubItem = resource.objectives.some((obj: any) => {
+          if (obj.responsible_id === profile.id) return true;
+          if (obj.actions) {
+            return obj.actions.some((act: any) => act.responsible_id === profile.id);
+          }
+          return false;
+        });
+      }
+      return isResponsibleOrApprover || isResponsibleForSubItem;
+    }
+
+    if (type === 'minute') {
+      // Colaborador comum só vê atas se for participante da reunião vinculada
+      if (resource.meeting_id) {
+        const meeting = meetings.find(m => m.id === resource.meeting_id);
+        if (meeting && meeting.participants && meeting.participants.includes(profile.id)) {
+          return true;
+        }
+      }
+      return false;
+    }
 
     return false;
   };
 
-  const filteredMeetingMinutes = meetingMinutes.filter(m => isResourceVisible(m, currentProfile));
-  const filteredActionPlans = actionPlans.filter(ap => isResourceVisible(ap, currentProfile));
-  const filteredIndicators = indicators.filter(i => isResourceVisible(i, currentProfile));
+  // Validadores para gerenciamento (criação, edição, exclusão)
+  const canManageIndicator = (ind: Partial<Indicator>): boolean => {
+    if (!currentProfile) return false;
+    if (currentProfile.role === 'admin' || currentProfile.role === 'consultor') return true;
+    if (!ind.id && !ind.department_id) {
+      return managedDeptIds.length > 0;
+    }
+    if (ind.department_id && managedDeptIds.includes(ind.department_id)) {
+      return true;
+    }
+    return false;
+  };
+
+  const canManageActionPlan = (plan: Partial<ActionPlan>): boolean => {
+    if (!currentProfile) return false;
+    if (currentProfile.role === 'admin' || currentProfile.role === 'consultor') return true;
+    if (!plan.id && !plan.department_id) {
+      return managedDeptIds.length > 0;
+    }
+    if (plan.department_id && managedDeptIds.includes(plan.department_id)) {
+      return true;
+    }
+    return false;
+  };
+
+  const canManageMeetingMinute = (minute: Partial<MeetingMinute>): boolean => {
+    if (!currentProfile) return false;
+    if (currentProfile.role === 'admin' || currentProfile.role === 'consultor') return true;
+    
+    let deptId: string | null = null;
+    if (minute.meeting_id) {
+      const meeting = meetings.find(m => m.id === minute.meeting_id);
+      if (meeting) {
+        deptId = meeting.department_id;
+      }
+    }
+    
+    if (!minute.id && !deptId) {
+      return managedDeptIds.length > 0;
+    }
+    
+    if (deptId && managedDeptIds.includes(deptId)) {
+      return true;
+    }
+    return false;
+  };
+
+  const filteredMeetingMinutes = meetingMinutes.filter(m => isResourceVisible(m, currentProfile, 'minute'));
+  const filteredActionPlans = actionPlans.filter(ap => isResourceVisible(ap, currentProfile, 'action_plan'));
+  const filteredIndicators = indicators.filter(i => isResourceVisible(i, currentProfile, 'indicator'));
 
   return (
     <AppContext.Provider value={{
@@ -1441,7 +1578,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createTenant,
       associateConsultant,
       dissociateConsultant,
-      fetchAssociatedConsultants
+      fetchAssociatedConsultants,
+      canManageIndicator,
+      canManageActionPlan,
+      canManageMeetingMinute
     }}>
       {children}
     </AppContext.Provider>

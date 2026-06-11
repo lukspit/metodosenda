@@ -52,7 +52,8 @@ export default function IndicatorsPage() {
     updateIndicator, 
     deleteIndicator,
     profiles,
-    loading 
+    loading,
+    canManageIndicator
   } = useApp();
   
   const [filterDept, setFilterDept] = useState<string>('all');
@@ -677,12 +678,14 @@ export default function IndicatorsPage() {
         <div className="h-full flex flex-col items-center justify-center text-[11px] text-slate-400 bg-slate-50/50 rounded-lg border border-dashed border-slate-200 p-4 min-h-[150px]">
           <Info className="w-5 h-5 text-slate-300 mb-1.5" />
           Nenhum dado mensal lançado neste ano.
-          <button 
-            onClick={() => handleOpenMeasurements(ind)}
-            className="text-[#C5A85A] hover:underline font-bold mt-1 text-[10px]"
-          >
-            Lançar Resultados
-          </button>
+          {canManageIndicator(ind) && (
+            <button 
+              onClick={() => handleOpenMeasurements(ind)}
+              className="text-[#C5A85A] hover:underline font-bold mt-1 text-[10px]"
+            >
+              Lançar Resultados
+            </button>
+          )}
         </div>
       );
     }
@@ -810,32 +813,38 @@ export default function IndicatorsPage() {
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button
-            onClick={() => setIsCsvModalOpen(true)}
-            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-[#1E2538] border border-slate-250 text-xs font-semibold px-4 py-2.5 rounded-md shadow-sm transition-colors"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-[#C5A85A]" />
-            Importar CSV
-          </button>
+          {canManageIndicator({}) && (
+            <>
+              <button
+                onClick={() => setIsCsvModalOpen(true)}
+                className="flex items-center gap-2 bg-white hover:bg-slate-50 text-[#1E2538] border border-slate-250 text-xs font-semibold px-4 py-2.5 rounded-md shadow-sm transition-colors"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-[#C5A85A]" />
+                Importar CSV
+              </button>
 
-          <button
-            onClick={handleCreateClick}
-            className="flex items-center gap-2 bg-[#1E2538] hover:bg-[#2c3752] text-white text-xs font-semibold px-4 py-2.5 rounded-md shadow transition-colors"
-          >
-            <Plus className="w-4 h-4 text-[#C5A85A]" />
-            Novo Indicador
-          </button>
+              <button
+                onClick={handleCreateClick}
+                className="flex items-center gap-2 bg-[#1E2538] hover:bg-[#2c3752] text-white text-xs font-semibold px-4 py-2.5 rounded-md shadow transition-colors"
+              >
+                <Plus className="w-4 h-4 text-[#C5A85A]" />
+                Novo Indicador
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Input de IA Contextual */}
-      <SmartInput
-        context="indicators"
-        placeholder="Adicione um indicador por voz ou texto... (ex: 'Criar indicador calculado Margem com variáveis Faturamento e Custo')"
-        onSuccess={handleAISuccess}
-        existingData={{ departments }}
-        suggestions={suggestions}
-      />
+      {canManageIndicator({}) && (
+        <SmartInput
+          context="indicators"
+          placeholder="Adicione um indicador por voz ou texto... (ex: 'Criar indicador calculado Margem com variáveis Faturamento e Custo')"
+          onSuccess={handleAISuccess}
+          existingData={{ departments }}
+          suggestions={suggestions}
+        />
+      )}
 
       {/* Filtros de Visualização */}
       <div className="bg-white p-5 rounded-lg border border-slate-200/60 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -912,22 +921,24 @@ export default function IndicatorsPage() {
                 className="bg-white rounded-lg p-6 border border-slate-200/60 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-200 relative group"
               >
                 {/* Botões rápidos de Editar/Excluir no hover do card */}
-                <div className="absolute top-4 right-4 flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-white/90 p-1 rounded-md shadow border border-slate-100">
-                  <button
-                    onClick={() => handleEditClick(ind)}
-                    className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
-                    title="Editar Indicador"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(ind.id, ind.name)}
-                    className="p-1 rounded hover:bg-rose-50 text-rose-500 transition-colors"
-                    title="Excluir Indicador"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                {canManageIndicator(ind) && (
+                  <div className="absolute top-4 right-4 flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-white/90 p-1 rounded-md shadow border border-slate-100">
+                    <button
+                      onClick={() => handleEditClick(ind)}
+                      className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
+                      title="Editar Indicador"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(ind.id, ind.name)}
+                      className="p-1 rounded hover:bg-rose-50 text-rose-500 transition-colors"
+                      title="Excluir Indicador"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
 
                 <div>
                   {/* Cabeçalho do Card */}
@@ -999,12 +1010,14 @@ export default function IndicatorsPage() {
                       <span className="capitalize ml-1">• Gráfico: {ind.chart_type}</span>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleOpenMeasurements(ind)}
-                    className="text-xs font-semibold text-slate-600 hover:text-[#C5A85A] flex items-center gap-1 transition-colors bg-slate-50 px-3 py-1.5 rounded border border-slate-200/50 hover:bg-slate-100/50"
-                  >
-                    <PlusCircle className="w-3.5 h-3.5 text-[#C5A85A]" /> Lançar Resultados
-                  </button>
+                  {canManageIndicator(ind) && (
+                    <button
+                      onClick={() => handleOpenMeasurements(ind)}
+                      className="text-xs font-semibold text-slate-600 hover:text-[#C5A85A] flex items-center gap-1 transition-colors bg-slate-50 px-3 py-1.5 rounded border border-slate-200/50 hover:bg-slate-100/50"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5 text-[#C5A85A]" /> Lançar Resultados
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -1385,6 +1398,7 @@ export default function IndicatorsPage() {
                   profiles={profiles}
                   allowedViewers={indAllowedViewers}
                   onChange={setIndAllowedViewers}
+                  disabled={selectedInd ? !canManageIndicator(selectedInd) : false}
                 />
               </div>
 
@@ -1899,16 +1913,19 @@ export default function IndicatorsPage() {
 function AllowedViewersSelector({
   profiles,
   allowedViewers,
-  onChange
+  onChange,
+  disabled
 }: {
   profiles: any[];
   allowedViewers: string[];
   onChange: (viewers: string[]) => void;
+  disabled?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const isPublic = allowedViewers.length === 0;
 
   const handleToggleUser = (userId: string) => {
+    if (disabled) return;
     if (allowedViewers.includes(userId)) {
       onChange(allowedViewers.filter(id => id !== userId));
     } else {
@@ -1917,6 +1934,7 @@ function AllowedViewersSelector({
   };
 
   const handleSetPublic = () => {
+    if (disabled) return;
     onChange([]);
   };
 
@@ -1927,24 +1945,27 @@ function AllowedViewersSelector({
           <User className="w-3.5 h-3.5 text-[#C5A85A]" />
           Quem pode visualizar este indicador?
         </label>
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="text-[10px] text-[#C5A85A] hover:underline font-bold"
-        >
-          {isOpen ? 'Fechar Opções' : 'Configurar Restrição'}
-        </button>
+        {!disabled && (
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-[10px] text-[#C5A85A] hover:underline font-bold"
+          >
+            {isOpen ? 'Fechar Opções' : 'Configurar Restrição'}
+          </button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2 pt-0.5">
         <button
           type="button"
           onClick={handleSetPublic}
+          disabled={disabled}
           className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all ${
             isPublic
               ? 'bg-[#C5A85A] border-[#C5A85A] text-white'
               : 'bg-white border-slate-250 text-slate-600 hover:bg-slate-50'
-          }`}
+          } ${disabled ? 'opacity-85 cursor-default' : ''}`}
         >
           Todos da Empresa (Público)
         </button>
@@ -1968,7 +1989,7 @@ function AllowedViewersSelector({
         )}
       </div>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-2 max-h-[140px] overflow-y-auto pr-1">
           <p className="text-[9px] text-slate-400 font-medium pb-0.5">Selecione quem terá permissão exclusiva:</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -1987,6 +2008,7 @@ function AllowedViewersSelector({
                     type="checkbox"
                     checked={checked}
                     onChange={() => handleToggleUser(prof.id)}
+                    disabled={disabled}
                     className="rounded text-[#C5A85A] border-slate-350 focus:ring-[#C5A85A] w-3 h-3"
                   />
                   <span className="text-[10px] truncate font-medium">{prof.name}</span>
