@@ -32,7 +32,7 @@ import {
 import { ptBR } from 'date-fns/locale';
 
 export default function CalendarPage() {
-  const { meetings, departments, profiles, createMeeting } = useApp();
+  const { meetings, departments, profiles, currentProfile, createMeeting } = useApp();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [aiFeedback, setAiFeedback] = useState<string | null>(null);
@@ -44,6 +44,7 @@ export default function CalendarPage() {
   const [newEnd, setNewEnd] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newDept, setNewDept] = useState('');
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
 
   // Callback ao agendar reunião via IA
   const handleAISuccess = async (result: any) => {
@@ -81,7 +82,7 @@ export default function CalendarPage() {
       start_time: new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${newStart}`).toISOString(),
       end_time: new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${newEnd}`).toISOString(),
       department_id: newDept || null,
-      participants: []
+      participants: selectedParticipants
     });
 
     if (success) {
@@ -90,6 +91,7 @@ export default function CalendarPage() {
       setNewEnd('');
       setNewDesc('');
       setNewDept('');
+      setSelectedParticipants([]);
       setShowAddForm(false);
       alert('Reunião agendada com sucesso!');
     }
@@ -133,6 +135,7 @@ export default function CalendarPage() {
             setNewEnd('');
             setNewDesc('');
             setNewDept('');
+            setSelectedParticipants([]);
             setShowAddForm(true);
           }}
           className="flex items-center gap-2 bg-[#1E2538] hover:bg-[#2c3752] text-white text-xs font-semibold px-4 py-2.5 rounded-md shadow transition-all active:scale-95 border border-slate-700"
@@ -281,7 +284,37 @@ export default function CalendarPage() {
                       <h4 className="font-bold text-xs text-slate-800 leading-snug">{meet.title}</h4>
                       {meet.description && <p className="text-[10px] text-slate-450 font-light">{meet.description}</p>}
                       
-                      <div className="flex flex-wrap gap-y-1 justify-between items-center text-[9px] text-slate-500 pt-1">
+                      {/* Convocados/Participantes */}
+                      {meet.participants && meet.participants.length > 0 && (
+                        <div className="flex flex-col gap-1 pt-1.5 border-t border-slate-200/40">
+                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Convocados:</span>
+                          <div className="flex -space-x-1 overflow-hidden py-0.5">
+                            {meet.participants.map(id => {
+                              const prof = profiles.find(p => p.id === id);
+                              if (!prof) return null;
+                              const initials = prof.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
+                              return (
+                                <div 
+                                  key={id} 
+                                  title={prof.name}
+                                  className="inline-block h-5 w-5 rounded-full ring-2 ring-slate-50 bg-[#C5A85A]/10 text-[#C5A85A] text-[8px] font-bold flex items-center justify-center border border-[#C5A85A]/25"
+                                >
+                                  {initials}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tag Você foi Convocado */}
+                      {currentProfile && meet.participants && meet.participants.includes(currentProfile.id) && (
+                        <div className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-600 text-[8px] font-bold px-2 py-0.5 rounded-full mt-1 uppercase tracking-wider">
+                          <Users className="w-2.5 h-2.5" /> Você foi convocado
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-y-1 justify-between items-center text-[9px] text-slate-500 pt-1.5 border-t border-slate-100/60">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5 text-[#C5A85A]" />
                           {format(parseISO(meet.start_time), 'HH:mm')} - {format(parseISO(meet.end_time), 'HH:mm')}
@@ -376,6 +409,44 @@ export default function CalendarPage() {
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Convocação de Colaboradores */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1.5">
+                  Convidar Colaboradores
+                </label>
+                <div className="bg-slate-50 border border-slate-200 rounded-md p-3 max-h-[110px] overflow-y-auto space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {profiles.map(p => {
+                      const isSelected = selectedParticipants.includes(p.id);
+                      return (
+                        <label 
+                          key={p.id} 
+                          className={`flex items-center gap-2 px-2 py-1.5 border rounded cursor-pointer transition-all ${
+                            isSelected 
+                              ? 'bg-[#C5A85A]/5 border-[#C5A85A]/30 text-slate-800 font-semibold' 
+                              : 'bg-white border-slate-150 text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {
+                              if (isSelected) {
+                                setSelectedParticipants(selectedParticipants.filter(id => id !== p.id));
+                              } else {
+                                setSelectedParticipants([...selectedParticipants, p.id]);
+                              }
+                            }}
+                            className="rounded text-[#C5A85A] border-slate-350 focus:ring-[#C5A85A] w-3.5 h-3.5"
+                          />
+                          <span className="text-[10px] truncate select-none">{p.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
               <div>

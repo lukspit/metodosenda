@@ -44,6 +44,19 @@ import {
   CartesianGrid 
 } from 'recharts';
 
+const CHART_COLORS = [
+  { hex: '', name: 'Dourado Senda (Padrão)' },
+  { hex: '#3B82F6', name: 'Azul' },
+  { hex: '#10B981', name: 'Verde' },
+  { hex: '#EF4444', name: 'Vermelho' },
+  { hex: '#F59E0B', name: 'Laranja' },
+  { hex: '#8B5CF6', name: 'Roxo' },
+  { hex: '#EC4899', name: 'Rosa' },
+  { hex: '#14B8A6', name: 'Teal' },
+  { hex: '#6366F1', name: 'Índigo' },
+  { hex: '#6B7280', name: 'Cinza' }
+];
+
 export default function IndicatorsPage() {
   const { 
     indicators, 
@@ -83,6 +96,7 @@ export default function IndicatorsPage() {
   const [indIndicatorType, setIndIndicatorType] = useState<Required<Indicator>['indicator_type']>('simple');
   const [indVariables, setIndVariables] = useState<IndicatorVariable[]>([]);
   const [indFormula, setIndFormula] = useState('');
+  const [indColor, setIndColor] = useState('');
   const [indAccumulationType, setIndAccumulationType] = useState<'sum' | 'latest' | 'avg'>('latest');
   const [indAllowedViewers, setIndAllowedViewers] = useState<string[]>([]);
 
@@ -218,6 +232,7 @@ export default function IndicatorsPage() {
     setIndVariables([]);
     setIndFormula('');
     setIndAllowedViewers([]);
+    setIndColor('');
     setIsModalOpen(true);
   };
 
@@ -237,6 +252,7 @@ export default function IndicatorsPage() {
     setIndVariables(ind.variables || []);
     setIndFormula(ind.formula || '');
     setIndAllowedViewers(ind.allowed_viewers || []);
+    setIndColor(ind.color || '');
     setIsModalOpen(true);
   };
 
@@ -331,7 +347,8 @@ export default function IndicatorsPage() {
       accumulation_type: indAccumulationType,
       variables: indIndicatorType === 'calculated' ? indVariables : [],
       formula: indIndicatorType === 'calculated' ? indFormula : '',
-      allowed_viewers: indAllowedViewers
+      allowed_viewers: indAllowedViewers,
+      color: indColor
     };
 
     if (selectedInd) {
@@ -692,86 +709,92 @@ export default function IndicatorsPage() {
 
     return (
       <div className="h-[160px] w-full mt-2">
-        <ResponsiveContainer width="100%" height="100%">
-          {chartType === 'area' ? (
-            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-              <defs>
-                <linearGradient id={`grad-${ind.id}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#C5A85A" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#C5A85A" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-              <XAxis dataKey="name" stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
-              <YAxis stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1E2538', 
-                  borderColor: '#334155', 
-                  borderRadius: '6px',
-                  color: '#fff',
-                  fontSize: '11px',
-                  padding: '5px 10px'
-                }} 
-              />
-              <Area 
-                type="monotone" 
-                dataKey="Valor" 
-                stroke="#C5A85A" 
-                strokeWidth={2} 
-                fillOpacity={1} 
-                fill={`url(#grad-${ind.id})`}
-                dot={{ fill: '#C5A85A', strokeWidth: 1 }}
-              />
-            </AreaChart>
-          ) : chartType === 'bar' ? (
-            <BarChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-              <XAxis dataKey="name" stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
-              <YAxis stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1E2538', 
-                  borderColor: '#334155', 
-                  borderRadius: '6px',
-                  color: '#fff',
-                  fontSize: '11px',
-                  padding: '5px 10px'
-                }} 
-              />
-              <Bar 
-                dataKey="Valor" 
-                fill="#C5A85A" 
-                radius={[3, 3, 0, 0]} 
-                maxBarSize={30}
-              />
-            </BarChart>
-          ) : (
-            <LineChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-              <XAxis dataKey="name" stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
-              <YAxis stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1E2538', 
-                  borderColor: '#334155', 
-                  borderRadius: '6px',
-                  color: '#fff',
-                  fontSize: '11px',
-                  padding: '5px 10px'
-                }} 
-              />
-              <Line 
-                type="monotone" 
-                dataKey="Valor" 
-                stroke="#C5A85A" 
-                strokeWidth={2} 
-                dot={{ fill: '#C5A85A', strokeWidth: 1 }}
-                activeDot={{ r: 5 }} 
-              />
-            </LineChart>
-          )}
-        </ResponsiveContainer>
+        {/* Usar a cor personalizada salva no indicador ou o dourado Senda por padrão */}
+        {(() => {
+          const chartColor = ind.color || '#C5A85A';
+          return (
+            <ResponsiveContainer width="100%" height="100%">
+              {chartType === 'area' ? (
+                <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id={`grad-${ind.id}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={chartColor} stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor={chartColor} stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                  <XAxis dataKey="name" stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1E2538', 
+                      borderColor: '#334155', 
+                      borderRadius: '6px',
+                      color: '#fff',
+                      fontSize: '11px',
+                      padding: '5px 10px'
+                    }} 
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="Valor" 
+                    stroke={chartColor} 
+                    strokeWidth={2} 
+                    fillOpacity={1} 
+                    fill={`url(#grad-${ind.id})`}
+                    dot={{ fill: chartColor, strokeWidth: 1 }}
+                  />
+                </AreaChart>
+              ) : chartType === 'bar' ? (
+                <BarChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                  <XAxis dataKey="name" stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1E2538', 
+                      borderColor: '#334155', 
+                      borderRadius: '6px',
+                      color: '#fff',
+                      fontSize: '11px',
+                      padding: '5px 10px'
+                    }} 
+                  />
+                  <Bar 
+                    dataKey="Valor" 
+                    fill={chartColor} 
+                    radius={[3, 3, 0, 0]} 
+                    maxBarSize={30}
+                  />
+                </BarChart>
+              ) : (
+                <LineChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                  <XAxis dataKey="name" stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1E2538', 
+                      borderColor: '#334155', 
+                      borderRadius: '6px',
+                      color: '#fff',
+                      fontSize: '11px',
+                      padding: '5px 10px'
+                    }} 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="Valor" 
+                    stroke={chartColor} 
+                    strokeWidth={2} 
+                    dot={{ fill: chartColor, strokeWidth: 1 }}
+                    activeDot={{ r: 5 }} 
+                  />
+                </LineChart>
+              )}
+            </ResponsiveContainer>
+          );
+        })()}
       </div>
     );
   };
@@ -1390,6 +1413,41 @@ export default function IndicatorsPage() {
                     <TrendingUp className="w-4 h-4 text-[#C5A85A]" />
                     Área
                   </button>
+                </div>
+              </div>
+
+              {/* Cor do Gráfico */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1.5">
+                  Cor do Gráfico
+                </label>
+                <div className="flex flex-wrap gap-2 items-center mb-1">
+                  {CHART_COLORS.map(c => (
+                    <button
+                      key={c.hex}
+                      type="button"
+                      onClick={() => setIndColor(c.hex)}
+                      className={`w-6 h-6 rounded-full border transition-all relative ${
+                        (indColor === c.hex || (c.hex === '' && !indColor)) 
+                          ? 'ring-2 ring-offset-2 ring-[#C5A85A] scale-110' 
+                          : 'border-slate-200 hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: c.hex || '#C5A85A' }}
+                      title={c.name}
+                    />
+                  ))}
+                  
+                  {/* Seletor Customizado */}
+                  <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-slate-200">
+                    <input
+                      type="color"
+                      value={indColor.startsWith('#') ? indColor : '#C5A85A'}
+                      onChange={e => setIndColor(e.target.value)}
+                      className="w-6 h-6 rounded cursor-pointer border border-slate-200 p-0"
+                      title="Cor personalizada"
+                    />
+                    <span className="text-[10px] text-slate-400 font-medium">Custom</span>
+                  </div>
                 </div>
               </div>
 

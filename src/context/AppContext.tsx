@@ -62,6 +62,7 @@ export interface Indicator {
   custom_unit?: string;
   measurements: IndicatorMeasurement[];
   allowed_viewers?: string[];
+  color?: string;
 }
 
 export function evaluateFormula(formula: string, variables: Record<string, number>): number {
@@ -94,6 +95,7 @@ export const parseIndicator = (dbInd: any): Indicator => {
   let custom_unit = '';
   let accumulation_type: 'sum' | 'latest' | 'avg' = 'latest';
   let allowed_viewers: string[] = [];
+  let color = '';
 
   const rawMeas = dbInd.measurements;
 
@@ -106,6 +108,7 @@ export const parseIndicator = (dbInd: any): Indicator => {
     formula = rawMeas.formula || '';
     custom_unit = rawMeas.custom_unit || '';
     allowed_viewers = rawMeas.allowed_viewers || [];
+    color = rawMeas.color || '';
     
     // Ler accumulation_type ou inferir a partir da unidade se ausente
     if (rawMeas.accumulation_type) {
@@ -140,7 +143,8 @@ export const parseIndicator = (dbInd: any): Indicator => {
     variables,
     formula,
     custom_unit,
-    measurements: parsedMeasurements
+    measurements: parsedMeasurements,
+    color
   };
 };
 
@@ -305,7 +309,7 @@ interface AppContextProps {
   meetings: Meeting[];
   meetingMinutes: MeetingMinute[];
   refreshData: () => Promise<void>;
-  createDepartment: (dept: Partial<Department>) => Promise<boolean>;
+  createDepartment: (dept: Partial<Department>) => Promise<string | null>;
   updateDepartment: (id: string, dept: Partial<Department>) => Promise<boolean>;
   deleteDepartment: (id: string) => Promise<boolean>;
   createIndicator: (ind: Partial<Indicator>) => Promise<boolean>;
@@ -905,8 +909,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // CRUD Departamentos
-  const createDepartment = async (dept: Partial<Department>): Promise<boolean> => {
-    if (!currentTenant) return false;
+  const createDepartment = async (dept: Partial<Department>): Promise<string | null> => {
+    if (!currentTenant) return null;
+    const newId = `d-${Math.random().toString(36).substring(2, 11)}`;
     const newDept = {
       tenant_id: currentTenant.id,
       name: dept.name || 'Novo Setor',
@@ -916,16 +921,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     try {
-      const { error } = await supabase.from('departments').insert([newDept]);
+      const { data, error } = await supabase
+        .from('departments')
+        .insert([newDept])
+        .select('id')
+        .single();
       if (error) throw error;
       await refreshData();
-      return true;
+      return data?.id || null;
     } catch (err) {
       console.error('Erro ao criar departamento no Supabase:', err);
       // Fallback local se estiver sem banco
       const managerName = profiles.find(p => p.id === newDept.manager_id)?.name || 'Sem responsável';
-      setDepartments(prev => [...prev, { ...newDept, id: `d-${Math.random().toString(36).substr(2, 9)}`, manager_name: managerName }]);
-      return true;
+      setDepartments(prev => [...prev, { ...newDept, id: newId, manager_name: managerName }]);
+      return newId;
     }
   };
 
@@ -981,7 +990,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       variables: ind.variables || [],
       formula: ind.formula || '',
       custom_unit: ind.custom_unit || '',
-      allowed_viewers: ind.allowed_viewers || []
+      allowed_viewers: ind.allowed_viewers || [],
+      color: ind.color || ''
     };
 
     const newIndPayload = {
@@ -1018,6 +1028,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         variables: ind.variables || [],
         formula: ind.formula || '',
         custom_unit: ind.custom_unit || '',
+        color: ind.color || '',
         measurements: ind.measurements || []
       } as Indicator;
       setIndicators(prev => [...prev, localInd]);
@@ -1041,7 +1052,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         variables: merged.variables || [],
         formula: merged.formula || '',
         custom_unit: merged.custom_unit || '',
-        allowed_viewers: merged.allowed_viewers || []
+        allowed_viewers: merged.allowed_viewers || [],
+        color: merged.color || ''
       };
 
       const payload = {

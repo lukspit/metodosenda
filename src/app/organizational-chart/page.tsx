@@ -35,20 +35,41 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-// 1. Componente Customizado para os Nós do Organograma
+// 1. Paleta de cores premium para os setores
+const PALETTE_COLORS = [
+  { hex: '', name: 'Padrão (Slate)' },
+  { hex: '#1E2538', name: 'Azul Senda' },
+  { hex: '#C5A85A', name: 'Dourado Senda' },
+  { hex: '#3B82F6', name: 'Azul Comercial' },
+  { hex: '#10B981', name: 'Verde' },
+  { hex: '#EF4444', name: 'Vermelho' },
+  { hex: '#F59E0B', name: 'Laranja' },
+  { hex: '#8B5CF6', name: 'Roxo' },
+  { hex: '#EC4899', name: 'Rosa' },
+  { hex: '#14B8A6', name: 'Teal' },
+  { hex: '#6B7280', name: 'Cinza' }
+];
+
+// 2. Componente Customizado para os Nós do Organograma
 const CustomNode: React.FC<NodeProps> = ({ data }) => {
   const isRoot = !!data.isRoot;
   const managerName = (data.managerName as string) || '';
   const deptName = (data.label as string) || '';
+  const color = (data as any).color as string || '';
   const onEdit = (data as any).onEdit as (() => void) | undefined;
   const onDelete = (data as any).onDelete as (() => void) | undefined;
 
   return (
-    <div className={`min-w-[190px] rounded-md shadow-lg border bg-white transition-all hover:scale-105 duration-200 overflow-hidden ${
-      isRoot 
-        ? 'border-2 border-[#C5A85A] ring-2 ring-[#C5A85A]/20' 
-        : 'border-slate-200'
-    }`}>
+    <div 
+      className={`min-w-[190px] rounded-md shadow-lg border bg-white transition-all hover:scale-105 duration-200 overflow-hidden ${
+        isRoot 
+          ? 'border-2 ring-2 ring-[#C5A85A]/20' 
+          : ''
+      }`}
+      style={{
+        borderColor: color || (isRoot ? '#C5A85A' : '#E2E8F0')
+      }}
+    >
       {/* Alça superior para conexão (entrada) se não for o nó raiz */}
       {!isRoot && (
         <Handle
@@ -59,16 +80,23 @@ const CustomNode: React.FC<NodeProps> = ({ data }) => {
       )}
 
       {/* Cabeçalho do Bloco */}
-      <div className={`px-4 py-2 flex items-center justify-between gap-2 border-b ${
-        isRoot 
-          ? 'bg-[#1E2538] text-white border-[#C5A85A]/30' 
-          : 'bg-slate-50 text-slate-850 border-slate-100'
-      }`}>
+      <div 
+        className={`px-4 py-2 flex items-center justify-between gap-2 border-b ${
+          isRoot ? 'text-white' : 'text-slate-850'
+        }`}
+        style={{
+          backgroundColor: color || (isRoot ? '#1E2538' : '#F8FAFC'),
+          borderColor: color ? `${color}33` : (isRoot ? '#C5A85A33' : '#F1F5F9'),
+          color: color ? '#FFFFFF' : (isRoot ? '#FFFFFF' : '#1E2538')
+        }}
+      >
         <span className="font-bold text-xs truncate max-w-[100px] uppercase tracking-wider">{deptName}</span>
         <div className="flex items-center gap-1 shrink-0">
           <button 
             onClick={(e) => { e.stopPropagation(); onEdit && onEdit(); }}
-            className={`p-1 rounded hover:bg-slate-200/50 transition-colors ${isRoot ? 'hover:bg-slate-700/50 text-[#C5A85A]' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`p-1 rounded hover:bg-slate-250/30 transition-colors ${
+              color ? 'text-white/80 hover:text-white' : (isRoot ? 'hover:bg-slate-700/50 text-[#C5A85A]' : 'text-slate-500 hover:text-slate-850')
+            }`}
             title="Editar setor"
           >
             <Edit2 className="w-3 h-3" />
@@ -76,7 +104,9 @@ const CustomNode: React.FC<NodeProps> = ({ data }) => {
           {!isRoot && (
             <button 
               onClick={(e) => { e.stopPropagation(); onDelete && onDelete(); }}
-              className="p-1 rounded hover:bg-rose-500/20 text-rose-500 transition-colors"
+              className={`p-1 rounded transition-colors ${
+                color ? 'text-white/80 hover:text-white hover:bg-rose-500/30' : 'hover:bg-rose-500/20 text-rose-500'
+              }`}
               title="Excluir setor"
             >
               <Trash2 className="w-3 h-3" />
@@ -99,11 +129,6 @@ const CustomNode: React.FC<NodeProps> = ({ data }) => {
       </div>
 
       {/* Alça inferior para conexão (saída) */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!bg-[#C5A85A] !w-2 h-2 !border-none"
-      />
     </div>
   );
 };
@@ -112,6 +137,7 @@ export default function OrganizationalChart() {
   const { 
     departments, 
     profiles, 
+    currentTenant,
     createDepartment, 
     updateDepartment, 
     deleteDepartment, 
@@ -127,10 +153,20 @@ export default function OrganizationalChart() {
   const [selectedDept, setSelectedDept] = useState<Department | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
 
+  // Modo Simulação
+  const [isSimulationMode, setIsSimulationMode] = useState(false);
+  const [simulationDepartments, setSimulationDepartments] = useState<Department[]>([]);
+
   // Campos do Formulário do Modal
   const [deptName, setDeptName] = useState('');
   const [deptManagerId, setDeptManagerId] = useState('');
   const [deptParentId, setDeptParentId] = useState('');
+  const [deptColor, setDeptColor] = useState('');
+
+  // Computa a lista ativa de departamentos com base no modo
+  const activeDepartments = useMemo(() => {
+    return isSimulationMode ? simulationDepartments : departments;
+  }, [isSimulationMode, simulationDepartments, departments]);
 
   const connectingNodeId = useRef<string | null>(null);
 
@@ -149,13 +185,14 @@ export default function OrganizationalChart() {
         setDeptParentId(connectingNodeId.current);
         setDeptName('');
         setDeptManagerId('');
+        setDeptColor('');
         setSelectedDept(null);
         setIsModalOpen(true);
       }
 
       connectingNodeId.current = null;
     },
-    [setDeptParentId, setDeptName, setDeptManagerId, setSelectedDept, setIsModalOpen]
+    [setDeptParentId, setDeptName, setDeptManagerId, setDeptColor, setSelectedDept, setIsModalOpen]
   );
 
   // Mapeamento dos tipos personalizados de nós no React Flow
@@ -167,6 +204,7 @@ export default function OrganizationalChart() {
     setDeptName(dept.name);
     setDeptManagerId(dept.manager_id || '');
     setDeptParentId(dept.parent_id || '');
+    setDeptColor(dept.code || '');
     setIsModalOpen(true);
   };
 
@@ -174,9 +212,10 @@ export default function OrganizationalChart() {
     setSelectedDept(null);
     setDeptName('');
     setDeptManagerId('');
+    setDeptColor('');
     
     // Tenta sugerir o primeiro setor como pai
-    const root = departments.find(d => d.parent_id === null) || departments[0];
+    const root = activeDepartments.find(d => d.parent_id === null) || activeDepartments[0];
     setDeptParentId(root ? root.id : '');
     
     setIsModalOpen(true);
@@ -184,9 +223,16 @@ export default function OrganizationalChart() {
 
   const handleDeleteClick = async (id: string, name: string) => {
     const confirm = window.confirm(`Tem certeza que deseja excluir o setor "${name}"? Todos os subsetores e planos de ação associados a ele perderão o vínculo.`);
-    if (confirm) {
-      await deleteDepartment(id);
+    if (!confirm) return;
+
+    if (isSimulationMode) {
+      setSimulationDepartments(prev => 
+        prev.filter(d => d.id !== id).map(d => d.parent_id === id ? { ...d, parent_id: null } : d)
+      );
+      return;
     }
+
+    await deleteDepartment(id);
   };
 
   // Salvar Form (Criar ou Editar)
@@ -194,22 +240,55 @@ export default function OrganizationalChart() {
     e.preventDefault();
     if (!deptName.trim()) return;
 
+    if (isSimulationMode) {
+      if (selectedDept) {
+        setSimulationDepartments(prev => 
+          prev.map(d => d.id === selectedDept.id ? {
+            ...d,
+            name: deptName,
+            manager_id: deptManagerId || null,
+            parent_id: deptParentId || null,
+            code: deptColor,
+            manager_name: profiles.find(p => p.id === deptManagerId)?.name || 'Sem responsável'
+          } : d)
+        );
+      } else {
+        const tempId = `sim-${Math.random().toString(36).substring(2, 11)}`;
+        const managerName = profiles.find(p => p.id === deptManagerId)?.name || 'Sem responsável';
+        const newSimDept: Department = {
+          id: tempId,
+          tenant_id: currentTenant?.id || '',
+          name: deptName,
+          parent_id: deptParentId || null,
+          manager_id: deptManagerId || null,
+          code: deptColor,
+          manager_name: managerName
+        };
+        setSimulationDepartments(prev => [...prev, newSimDept]);
+      }
+      setIsModalOpen(false);
+      setSelectedDept(null);
+      return;
+    }
+
     setModalLoading(true);
-    let success = false;
+    let success: any = false;
 
     if (selectedDept) {
       // Editar
       success = await updateDepartment(selectedDept.id, {
         name: deptName,
         manager_id: deptManagerId || null,
-        parent_id: deptParentId || null
+        parent_id: deptParentId || null,
+        code: deptColor
       });
     } else {
       // Criar
       success = await createDepartment({
         name: deptName,
         manager_id: deptManagerId || null,
-        parent_id: deptParentId || null
+        parent_id: deptParentId || null,
+        code: deptColor
       });
     }
 
@@ -222,19 +301,127 @@ export default function OrganizationalChart() {
     }
   };
 
+  // Ativa a Simulação
+  const handleStartSimulation = () => {
+    setSimulationDepartments(JSON.parse(JSON.stringify(departments)));
+    setIsSimulationMode(true);
+  };
+
+  // Cancela / Descarta Simulação
+  const handleDiscardSimulation = () => {
+    const confirm = window.confirm("Tem certeza que deseja descartar todas as alterações simuladas?");
+    if (confirm) {
+      setIsSimulationMode(false);
+      setSimulationDepartments([]);
+    }
+  };
+
+  // Salva Simulação em Lote
+  const handleApplySimulation = async () => {
+    const confirm = window.confirm("Deseja aplicar todas as alterações simuladas no organograma real da empresa?");
+    if (!confirm) return;
+
+    setModalLoading(true);
+    try {
+      // 1. Identificar exclusões
+      const toDelete = departments.filter(d => !simulationDepartments.some(sd => sd.id === d.id));
+      for (const d of toDelete) {
+        await deleteDepartment(d.id);
+      }
+
+      // 2. Identificar edições (existentes que mudaram)
+      const toUpdate = simulationDepartments.filter(sd => !sd.id.startsWith('sim-'));
+      for (const sd of toUpdate) {
+        const original = departments.find(d => d.id === sd.id);
+        if (original && (
+          original.name !== sd.name || 
+          original.parent_id !== sd.parent_id || 
+          original.manager_id !== sd.manager_id || 
+          original.code !== sd.code
+        )) {
+          await updateDepartment(sd.id, {
+            name: sd.name,
+            parent_id: sd.parent_id,
+            manager_id: sd.manager_id,
+            code: sd.code
+          });
+        }
+      }
+
+      // 3. Identificar criações (novos começam com 'sim-')
+      const toCreate = simulationDepartments.filter(sd => sd.id.startsWith('sim-'));
+      const simToRealIdMap: Record<string, string> = {};
+
+      let remainingToCreate = [...toCreate];
+      let iterations = 0;
+      const maxIterations = remainingToCreate.length * 2;
+
+      while (remainingToCreate.length > 0 && iterations < maxIterations) {
+        const nextBatch = remainingToCreate.filter(sd => {
+          return !sd.parent_id || !sd.parent_id.startsWith('sim-') || !!simToRealIdMap[sd.parent_id];
+        });
+
+        if (nextBatch.length === 0) {
+          // Criar sem parent_id para evitar ciclo
+          for (const sd of remainingToCreate) {
+            const realId = await createDepartment({
+              name: sd.name,
+              parent_id: null,
+              manager_id: sd.manager_id,
+              code: sd.code
+            });
+            if (realId) {
+              simToRealIdMap[sd.id] = realId;
+            }
+          }
+          break;
+        }
+
+        for (const sd of nextBatch) {
+          let realParentId = sd.parent_id;
+          if (sd.parent_id && sd.parent_id.startsWith('sim-')) {
+            realParentId = simToRealIdMap[sd.parent_id] || null;
+          }
+
+          const realId = await createDepartment({
+            name: sd.name,
+            parent_id: realParentId,
+            manager_id: sd.manager_id,
+            code: sd.code
+          });
+          if (realId) {
+            simToRealIdMap[sd.id] = realId;
+          }
+        }
+
+        remainingToCreate = remainingToCreate.filter(sd => !nextBatch.includes(sd));
+        iterations++;
+      }
+
+      alert("Simulação aplicada com sucesso no banco de dados!");
+      setIsSimulationMode(false);
+      await refreshData();
+    } catch (e) {
+      console.error(e);
+      alert("Ocorreu um erro ao salvar o organograma simulado.");
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
   // Algoritmo simples de árvore para posicionar os nós
   const buildHierarchy = useCallback(() => {
-    if (departments.length === 0) return;
+    if (activeDepartments.length === 0) return;
 
     const newNodes: Node[] = [];
     const newEdges: Edge[] = [];
 
     // Encontrar o nó raiz (geralmente sem parent_id)
-    const root = departments.find(d => d.parent_id === null) || departments[0];
+    const root = activeDepartments.find(d => d.parent_id === null) || activeDepartments[0];
 
     // Mapeamento de parent -> children
     const parentToChildren: Record<string, Department[]> = {};
-    departments.forEach(d => {
+    activeDepartments.forEach(d => {
       if (d.parent_id) {
         if (!parentToChildren[d.parent_id]) {
           parentToChildren[d.parent_id] = [];
@@ -256,6 +443,7 @@ export default function OrganizationalChart() {
           label: dept.name, 
           managerName: dept.manager_name || 'Sem gestor',
           isRoot,
+          color: dept.code,
           onEdit: () => handleEditClick(dept),
           onDelete: () => handleDeleteClick(dept.id, dept.name)
         },
@@ -297,12 +485,12 @@ export default function OrganizationalChart() {
 
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [departments, setNodes, setEdges]);
+  }, [activeDepartments, setNodes, setEdges]);
 
   // Atualizar organograma quando os dados dos setores mudarem
   useEffect(() => {
     buildHierarchy();
-  }, [departments, buildHierarchy]);
+  }, [activeDepartments, buildHierarchy]);
 
   // Callback de sucesso da IA no SmartInput
   const handleAISuccess = async (result: any): Promise<boolean> => {
@@ -320,6 +508,21 @@ export default function OrganizationalChart() {
         }
       }
 
+      if (isSimulationMode) {
+        const tempId = `sim-${Math.random().toString(36).substring(2, 11)}`;
+        const newSimDept: Department = {
+          id: tempId,
+          tenant_id: currentTenant?.id || '',
+          name,
+          parent_id: parent_id || null,
+          manager_id: managerId,
+          code: '',
+          manager_name: manager_name || 'Sem responsável'
+        };
+        setSimulationDepartments(prev => [...prev, newSimDept]);
+        return true;
+      }
+
       const success = await createDepartment({
         name,
         parent_id,
@@ -327,16 +530,16 @@ export default function OrganizationalChart() {
         manager_name: manager_name || undefined
       });
 
-      return success;
+      return !!success;
     }
     return false;
   };
 
   // Filtrar lista de setores para pai: não pode ser ele mesmo!
   const parentOptions = useMemo(() => {
-    if (!selectedDept) return departments;
-    return departments.filter(d => d.id !== selectedDept.id);
-  }, [departments, selectedDept]);
+    if (!selectedDept) return activeDepartments;
+    return activeDepartments.filter(d => d.id !== selectedDept.id);
+  }, [activeDepartments, selectedDept]);
 
   const suggestions = [
     'Criar o setor de Suporte abaixo de TI liderado pelo João',
@@ -357,8 +560,35 @@ export default function OrganizationalChart() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-xs bg-slate-100 text-slate-650 px-4 py-2 rounded-md border border-slate-200/40">
             <GitPullRequest className="w-4 h-4 text-[#C5A85A]" />
-            <span>Total de Setores: <strong>{departments.length}</strong></span>
+            <span>Total de Setores: <strong>{activeDepartments.length}</strong></span>
           </div>
+
+          {!isSimulationMode ? (
+            <button
+              onClick={handleStartSimulation}
+              className="flex items-center gap-2 bg-[#C5A85A]/10 hover:bg-[#C5A85A]/20 text-[#C5A85A] text-xs font-semibold px-4 py-2 rounded-md transition-colors border border-[#C5A85A]/30"
+            >
+              <Sparkles className="w-4 h-4 text-[#C5A85A]" />
+              Simular Alterações
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={handleApplySimulation}
+                className="flex items-center gap-1.5 bg-[#10B981] hover:bg-[#0e9f6e] text-white text-xs font-semibold px-3 py-2 rounded-md shadow transition-colors"
+                disabled={modalLoading}
+              >
+                Aplicar Simulação
+              </button>
+              <button
+                onClick={handleDiscardSimulation}
+                className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-750 text-white text-xs font-semibold px-3 py-2 rounded-md shadow transition-colors"
+                disabled={modalLoading}
+              >
+                Descartar
+              </button>
+            </div>
+          )}
           
           <button
             onClick={handleCreateClick}
@@ -374,14 +604,25 @@ export default function OrganizationalChart() {
       <div className="shrink-0">
         <SmartInput
           context="departments"
-          placeholder="Crie ou modifique setores por voz ou texto... (ex: 'Adicionar departamento de Marketing abaixo de Comercial')"
+          placeholder={isSimulationMode ? "Adicione setores na simulação por IA... (ex: 'Adicionar Marketing abaixo do Comercial')" : "Crie ou modifique setores por voz ou texto... (ex: 'Adicionar departamento de Marketing abaixo de Comercial')"}
           onSuccess={handleAISuccess}
-          existingData={departments}
+          existingData={activeDepartments}
           suggestions={suggestions}
         />
       </div>
 
-
+      {/* Banner Informativo do Modo Simulação */}
+      {isSimulationMode && (
+        <div className="bg-[#C5A85A]/15 border border-[#C5A85A]/45 rounded-lg px-4 py-3 text-xs text-slate-800 flex items-center justify-between shadow-sm animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#C5A85A] animate-pulse" />
+            <div>
+              <span className="font-bold text-[#C5A85A] uppercase tracking-wider block text-[10px]">Modo de Simulação Ativo</span>
+              <span className="text-[11px] text-slate-600 font-medium">As alterações feitas agora rodam apenas na memória local. Clique em &quot;Aplicar Simulação&quot; no canto superior para salvá-las definitivamente.</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tela do Organograma (React Flow) */}
       <div className="flex-1 bg-white border border-slate-200/60 rounded-lg overflow-hidden shadow-sm relative min-h-[350px]">
@@ -502,6 +743,45 @@ export default function OrganizationalChart() {
                   </p>
                 </div>
               )}
+
+              {/* Seletor Cromático do Setor */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1.5">
+                  Cor de Destaque do Setor
+                </label>
+                <div className="flex flex-wrap gap-2 items-center mb-1">
+                  {PALETTE_COLORS.map(c => (
+                    <button
+                      key={c.hex}
+                      type="button"
+                      onClick={() => setDeptColor(c.hex)}
+                      className={`w-6 h-6 rounded-full border transition-all relative ${
+                        deptColor === c.hex 
+                          ? 'ring-2 ring-offset-2 ring-[#C5A85A] scale-110' 
+                          : 'border-slate-200 hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: c.hex || '#F8FAFC' }}
+                      title={c.name}
+                    >
+                      {c.hex === '' && (
+                        <span className="absolute inset-0 flex items-center justify-center text-[10px] text-slate-400 font-bold">×</span>
+                      )}
+                    </button>
+                  ))}
+                  
+                  {/* Seletor Personalizado */}
+                  <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-slate-200">
+                    <input
+                      type="color"
+                      value={deptColor.startsWith('#') ? deptColor : '#3B82F6'}
+                      onChange={e => setDeptColor(e.target.value)}
+                      className="w-6 h-6 rounded cursor-pointer border border-slate-200 p-0"
+                      title="Cor personalizada"
+                    />
+                    <span className="text-[10px] text-slate-400 font-medium">Custom</span>
+                  </div>
+                </div>
+              </div>
 
               {/* Botões do Rodapé */}
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
